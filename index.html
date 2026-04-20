@@ -3,35 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>⚡ ماكولا سويعه | كاشير VIP</title>
+    <title>⚡ ماكولا سويعه | النظام الذهبي</title>
+    
+    <!-- Tailwind & Font Awesome & Google Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- SheetJS لتصدير Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- html2canvas + jsPDF لتصدير PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         * { font-family: 'Cairo', sans-serif; }
         body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); background-attachment: fixed; }
+        
+        /* تأثيرات زجاجية */
         .glass-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
         .glass-card-light { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        
+        /* تأثيرات الضغط */
         .cat-card:active, .product-card:active { transform: scale(0.96); }
         .product-card { transition: all 0.2s; border-radius: 24px; }
         .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3); }
+        
+        /* سكرول بار */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 10px; }
+        
+        /* ألوان ذهبية */
         .gold-gradient { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
         .gold-text { background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .tab-active { background: linear-gradient(135deg, #fbbf24, #d97706) !important; color: #1a1a2e !important; font-weight: 900; }
-        .order-card { transition: all 0.2s; }
-        .order-card:hover { transform: translateX(-5px); }
+        
+        /* حالة الطلب */
         .status-badge { padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .status-new { background: #fef3c7; color: #92400e; }
         .status-ready { background: #d1fae5; color: #065f46; }
         .status-done { background: #e0e7ff; color: #3730a3; }
+
+        /* شاشة تسجيل الدخول */
+        .login-container {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,215,0,0.3);
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col p-3">
 
-    <!-- إعدادات Firebase + تليجرام -->
+    <!-- ================= إعدادات Firebase + تليجرام ================= -->
     <script type="module">
         const firebaseConfig = {
             apiKey: "AIzaSy5S-w-4dH0aVyz_6QbyADJpWuSetSNwTPM",
@@ -47,11 +75,14 @@
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
         
         window.db = db;
+        window.auth = auth;
         window.TELEGRAM_BOT_TOKEN = TELEGRAM_BOT_TOKEN;
         window.TELEGRAM_CHAT_ID = TELEGRAM_CHAT_ID;
         window.collection = collection;
@@ -63,141 +94,295 @@
         window.query = query;
         window.orderBy = orderBy;
         window.where = where;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.signOut = signOut;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
         
-        console.log("🔥 ماكولا سويعه - جاهز");
+        console.log("🔥 ماكولا سويعه - النظام الذهبي جاهز");
         window.dispatchEvent(new Event('firebaseReady'));
     </script>
 
-    <!-- الهيدر -->
-    <header class="glass-card rounded-3xl p-3 mb-3 flex justify-between items-center text-white shadow-2xl">
-        <div class="flex items-center gap-2">
-            <div class="gold-gradient p-2 rounded-2xl"><i class="fas fa-crown text-2xl text-gray-900"></i></div>
-            <div>
-                <h1 class="text-2xl font-black gold-text">ماكولا سويعه</h1>
-                <p class="text-xs text-gray-300">نكهة بغداد • جودة الملوك</p>
-            </div>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="showCashier()" id="btnCashier" class="px-4 py-2 rounded-xl font-bold tab-active"><i class="fas fa-cash-register ml-1"></i> البيع</button>
-            <button onclick="showOrders()" id="btnOrders" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-clipboard-list ml-1"></i> الطلبات</button>
-            <button onclick="showAdmin()" id="btnAdmin" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-chart-pie ml-1"></i> الإدارة</button>
-        </div>
-    </header>
+    <!-- ================= أصوات الإشعارات ================= -->
+    <audio id="newOrderSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
+    <audio id="readyOrderSound" src="https://www.soundjay.com/misc/sounds/ding-2.mp3" preload="auto"></audio>
 
-    <!-- ================= واجهة الكاشير ================= -->
-    <main id="cashierView" class="flex-1 flex flex-col md:flex-row gap-3 overflow-hidden">
-        <div class="flex-[3] flex flex-col gap-3 overflow-hidden">
-            <div class="glass-card-light rounded-3xl p-4">
-                <div class="relative mb-3">
-                    <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="searchInput" onkeyup="searchProducts()" placeholder="شنو تريد تدور؟" class="w-full bg-white/80 rounded-2xl py-3 pr-12 pl-4 shadow-inner">
+    <!-- ================= شاشة تسجيل الدخول ================= -->
+    <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-50" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
+        <div class="login-container w-full max-w-md p-8 rounded-3xl shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="gold-gradient p-4 rounded-2xl inline-block mb-4">
+                    <i class="fas fa-crown text-4xl text-gray-900"></i>
                 </div>
-                <h3 class="font-bold text-gray-700 mb-2"><i class="fas fa-layer-group ml-2 text-yellow-600"></i> الأصناف</h3>
-                <div id="categoryGrid" class="grid grid-cols-3 md:grid-cols-5 gap-2"></div>
-            </div>
-            <div class="glass-card-light rounded-3xl p-4 flex-1 overflow-hidden flex flex-col">
-                <h3 class="font-bold text-gray-700 mb-2"><i class="fas fa-mug-saucer ml-2 text-yellow-600"></i> قائمة المأكولات</h3>
-                <div id="productsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto pr-1 pb-2"></div>
-            </div>
-        </div>
-        <div class="flex-1 glass-card rounded-3xl p-4 text-white flex flex-col shadow-2xl border-2 border-yellow-600/30">
-            <div class="flex justify-between items-center border-b border-white/20 pb-3">
-                <h2 class="text-xl font-black"><i class="fas fa-shopping-basket ml-2 text-yellow-400"></i> سلة الزبون</h2>
-                <span class="bg-yellow-500/20 px-3 py-1 rounded-full text-sm"><span id="cartCount">0</span> مواد</span>
-            </div>
-            <div id="cartItems" class="flex-1 overflow-y-auto my-3 space-y-2"></div>
-            <div class="border-t border-white/20 pt-3 space-y-3">
-                <div class="flex justify-between items-center text-xl font-black">
-                    <span>المجموع</span>
-                    <span class="gold-text text-3xl"><span id="cartTotal">0</span> <small class="text-sm text-gray-300">د.ع</small></span>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="submitOrder()" class="gold-gradient text-gray-900 py-3 rounded-xl font-black text-lg"><i class="fas fa-paper-plane ml-1"></i> دز الطلب</button>
-                    <button onclick="clearCart()" class="bg-red-600/80 text-white py-3 rounded-xl font-bold"><i class="fas fa-trash-alt ml-1"></i> مسح</button>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- ================= شاشة الطلبات (جديد) ================= -->
-    <main id="ordersView" class="flex-1 overflow-y-auto hidden">
-        <div class="max-w-7xl mx-auto space-y-4">
-            <!-- إحصائيات الكاشير -->
-            <div class="grid grid-cols-3 gap-3">
-                <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">طلبات اليوم</p><p class="text-3xl font-black" id="todayOrdersCount">0</p></div>
-                <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">إجمالي المبيعات</p><p class="text-3xl font-black gold-text"><span id="todaySales">0</span> د.ع</p></div>
-                <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">متوسط الطلب</p><p class="text-3xl font-black"><span id="avgOrder">0</span> د.ع</p></div>
+                <h1 class="text-3xl font-black gold-text">ماكولا سويعه</h1>
+                <p class="text-gray-400 text-sm mt-1">نظام إدارة المقهى الذهبي</p>
             </div>
             
-            <!-- قائمة الطلبات النشطة -->
-            <div class="glass-card-light rounded-3xl p-5">
-                <h3 class="text-xl font-black mb-4 flex items-center"><i class="fas fa-clock ml-2 text-yellow-600"></i> الطلبات المعلقة</h3>
-                <div id="activeOrdersList" class="space-y-3 max-h-96 overflow-y-auto"></div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-envelope ml-2"></i> البريد الإلكتروني</label>
+                    <input type="email" id="loginEmail" placeholder="example@email.com" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-lock ml-2"></i> كلمة المرور</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none">
+                </div>
+                <button onclick="login()" class="w-full gold-gradient text-gray-900 py-3 rounded-xl font-black text-lg shadow-lg hover:shadow-yellow-500/50 transition">
+                    <i class="fas fa-sign-in-alt ml-2"></i> دخول
+                </button>
             </div>
             
-            <!-- آخر 10 طلبات منجزة -->
-            <div class="glass-card-light rounded-3xl p-5">
-                <h3 class="text-xl font-black mb-4 flex items-center"><i class="fas fa-check-circle ml-2 text-green-600"></i> آخر الطلبات المنجزة</h3>
-                <div id="completedOrdersList" class="space-y-2"></div>
+            <div class="mt-6 text-center text-gray-400 text-xs">
+                <p>للاستخدام التجريبي:</p>
+                <p>مدير: admin@makola.com / 123456</p>
+                <p>كاشير: cashier@makola.com / 123456</p>
             </div>
         </div>
-    </main>
+    </div>
 
-    <!-- ================= لوحة الإدارة ================= -->
-    <main id="adminView" class="flex-1 overflow-y-auto hidden">
-        <div class="max-w-7xl mx-auto space-y-4">
-            <div class="grid grid-cols-3 gap-3">
-                <div class="glass-card-light rounded-2xl p-4"><div class="gold-gradient p-3 rounded-xl inline-block mb-2"><i class="fas fa-layer-group"></i></div><p class="text-gray-500">الأصناف</p><p class="text-2xl font-black" id="statsCats">0</p></div>
-                <div class="glass-card-light rounded-2xl p-4"><div class="bg-blue-500 p-3 rounded-xl inline-block mb-2"><i class="fas fa-mug-hot text-white"></i></div><p class="text-gray-500">المنتجات</p><p class="text-2xl font-black" id="statsProds">0</p></div>
-                <div class="glass-card-light rounded-2xl p-4"><div class="bg-green-500 p-3 rounded-xl inline-block mb-2"><i class="fas fa-receipt text-white"></i></div><p class="text-gray-500">كل الطلبات</p><p class="text-2xl font-black" id="statsTotalOrders">0</p></div>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="glass-card-light rounded-3xl p-5">
-                    <h3 class="text-xl font-black mb-4"><i class="fas fa-folder-plus ml-2 text-yellow-600"></i> إضافة صنف</h3>
-                    <div class="flex gap-2"><input type="text" id="newCatName" placeholder="اسم الصنف" class="flex-1 bg-white/70 rounded-xl p-3"><button onclick="addCategory()" class="gold-gradient px-6 rounded-xl font-bold"><i class="fas fa-plus"></i></button></div>
-                    <ul id="adminCatList" class="mt-4 space-y-2 max-h-60 overflow-y-auto"></ul>
+    <!-- ================= التطبيق الرئيسي (مخفي حتى تسجيل الدخول) ================= -->
+    <div id="mainApp" class="hidden h-full flex flex-col">
+        
+        <!-- الهيدر -->
+        <header class="glass-card rounded-3xl p-3 mb-3 flex justify-between items-center text-white shadow-2xl">
+            <div class="flex items-center gap-2">
+                <div class="gold-gradient p-2 rounded-2xl"><i class="fas fa-crown text-2xl text-gray-900"></i></div>
+                <div>
+                    <h1 class="text-2xl font-black gold-text">ماكولا سويعه</h1>
+                    <p class="text-xs text-gray-300" id="userRoleDisplay">نكهة بغداد</p>
                 </div>
-                <div class="glass-card-light rounded-3xl p-5">
-                    <h3 class="text-xl font-black mb-4"><i class="fas fa-plus-circle ml-2 text-green-600"></i> إضافة مادة</h3>
-                    <div class="space-y-3">
-                        <input type="text" id="newProdName" placeholder="اسم المادة" class="w-full bg-white/70 rounded-xl p-3">
-                        <div class="grid grid-cols-2 gap-2"><input type="number" id="newProdPrice" placeholder="السعر" class="bg-white/70 rounded-xl p-3"><select id="newProdCat" class="bg-white/70 rounded-xl p-3"></select></div>
-                        <input type="text" id="newProdDesc" placeholder="وصف" class="w-full bg-white/70 rounded-xl p-3">
-                        <button onclick="addProduct()" class="w-full bg-green-600 text-white py-3 rounded-xl font-black">إضافة</button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="showCashier()" id="btnCashier" class="px-4 py-2 rounded-xl font-bold tab-active"><i class="fas fa-cash-register ml-1"></i> البيع</button>
+                <button onclick="showOrders()" id="btnOrders" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-clipboard-list ml-1"></i> الطلبات</button>
+                <button onclick="showReports()" id="btnReports" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white admin-only"><i class="fas fa-chart-bar ml-1"></i> التقارير</button>
+                <button onclick="showAdmin()" id="btnAdmin" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white admin-only"><i class="fas fa-cog ml-1"></i> الإدارة</button>
+                <button onclick="logout()" class="px-4 py-2 rounded-xl font-bold bg-red-600/50 hover:bg-red-700 text-white"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <!-- ================= واجهة الكاشير ================= -->
+        <main id="cashierView" class="flex-1 flex flex-col md:flex-row gap-3 overflow-hidden">
+            <div class="flex-[3] flex flex-col gap-3 overflow-hidden">
+                <div class="glass-card-light rounded-3xl p-4">
+                    <div class="relative mb-3">
+                        <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="searchInput" onkeyup="searchProducts()" placeholder="شنو تريد تدور؟" class="w-full bg-white/80 rounded-2xl py-3 pr-12 pl-4 shadow-inner">
+                    </div>
+                    <h3 class="font-bold text-gray-700 mb-2"><i class="fas fa-layer-group ml-2 text-yellow-600"></i> الأصناف</h3>
+                    <div id="categoryGrid" class="grid grid-cols-3 md:grid-cols-5 gap-2"></div>
+                </div>
+                <div class="glass-card-light rounded-3xl p-4 flex-1 overflow-hidden flex flex-col">
+                    <h3 class="font-bold text-gray-700 mb-2"><i class="fas fa-mug-saucer ml-2 text-yellow-600"></i> قائمة المأكولات</h3>
+                    <div id="productsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto pr-1 pb-2"></div>
+                </div>
+            </div>
+            <div class="flex-1 glass-card rounded-3xl p-4 text-white flex flex-col shadow-2xl border-2 border-yellow-600/30">
+                <div class="flex justify-between items-center border-b border-white/20 pb-3">
+                    <h2 class="text-xl font-black"><i class="fas fa-shopping-basket ml-2 text-yellow-400"></i> سلة الزبون</h2>
+                    <span class="bg-yellow-500/20 px-3 py-1 rounded-full text-sm"><span id="cartCount">0</span> مواد</span>
+                </div>
+                <div id="cartItems" class="flex-1 overflow-y-auto my-3 space-y-2"></div>
+                <div class="border-t border-white/20 pt-3 space-y-3">
+                    <div class="flex justify-between items-center text-xl font-black">
+                        <span>المجموع</span>
+                        <span class="gold-text text-3xl"><span id="cartTotal">0</span> <small class="text-sm text-gray-300">د.ع</small></span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="submitOrder()" class="gold-gradient text-gray-900 py-3 rounded-xl font-black text-lg"><i class="fas fa-paper-plane ml-1"></i> دز الطلب</button>
+                        <button onclick="clearCart()" class="bg-red-600/80 text-white py-3 rounded-xl font-bold"><i class="fas fa-trash-alt ml-1"></i> مسح</button>
                     </div>
                 </div>
             </div>
-            <div class="glass-card-light rounded-3xl p-5">
-                <h3 class="text-xl font-black mb-4">📋 قائمة المواد</h3>
-                <div class="overflow-x-auto"><table class="w-full text-right"><thead><tr><th class="p-2">المادة</th><th class="p-2">الصنف</th><th class="p-2">السعر</th><th class="p-2"></th></tr></thead><tbody id="adminProdList"></tbody></table></div>
+        </main>
+
+        <!-- ================= شاشة الطلبات ================= -->
+        <main id="ordersView" class="flex-1 overflow-y-auto hidden">
+            <div class="max-w-7xl mx-auto space-y-4">
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">طلبات اليوم</p><p class="text-3xl font-black" id="todayOrdersCount">0</p></div>
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">إجمالي المبيعات</p><p class="text-3xl font-black gold-text"><span id="todaySales">0</span> د.ع</p></div>
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">متوسط الطلب</p><p class="text-3xl font-black"><span id="avgOrder">0</span> د.ع</p></div>
+                </div>
+                
+                <div class="glass-card-light rounded-3xl p-5">
+                    <h3 class="text-xl font-black mb-4 flex items-center"><i class="fas fa-clock ml-2 text-yellow-600"></i> الطلبات المعلقة</h3>
+                    <div id="activeOrdersList" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                </div>
+                
+                <div class="glass-card-light rounded-3xl p-5">
+                    <h3 class="text-xl font-black mb-4 flex items-center"><i class="fas fa-check-circle ml-2 text-green-600"></i> آخر الطلبات المنجزة</h3>
+                    <div id="completedOrdersList" class="space-y-2"></div>
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
+
+        <!-- ================= شاشة التقارير (للمدير فقط) ================= -->
+        <main id="reportsView" class="flex-1 overflow-y-auto hidden">
+            <div class="max-w-7xl mx-auto space-y-4">
+                <!-- أزرار التصدير -->
+                <div class="flex gap-3 justify-end">
+                    <button onclick="exportToExcel()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-file-excel ml-2"></i> تصدير Excel</button>
+                    <button onclick="exportToPDF()" class="bg-red-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-file-pdf ml-2"></i> تصدير PDF</button>
+                    <button onclick="printInvoicePDF()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-print ml-2"></i> فاتورة PDF</button>
+                </div>
+                
+                <!-- إحصائيات -->
+                <div class="grid grid-cols-4 gap-3">
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">إجمالي المبيعات</p><p class="text-2xl font-black"><span id="totalSalesAll">0</span> د.ع</p></div>
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">عدد الطلبات</p><p class="text-2xl font-black" id="totalOrdersAll">0</p></div>
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">عدد المنتجات</p><p class="text-2xl font-black" id="totalProductsAll">0</p></div>
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">عدد الأصناف</p><p class="text-2xl font-black" id="totalCategoriesAll">0</p></div>
+                </div>
+                
+                <!-- رسوم بيانية -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="glass-card-light rounded-3xl p-5">
+                        <h3 class="font-black mb-4">📊 أكثر المنتجات مبيعاً</h3>
+                        <canvas id="topProductsChart" height="200"></canvas>
+                    </div>
+                    <div class="glass-card-light rounded-3xl p-5">
+                        <h3 class="font-black mb-4">📈 مبيعات آخر 7 أيام</h3>
+                        <canvas id="weeklySalesChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= لوحة الإدارة ================= -->
+        <main id="adminView" class="flex-1 overflow-y-auto hidden">
+            <div class="max-w-7xl mx-auto space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="glass-card-light rounded-3xl p-5">
+                        <h3 class="text-xl font-black mb-4"><i class="fas fa-user-plus ml-2 text-yellow-600"></i> إضافة مستخدم جديد</h3>
+                        <div class="space-y-3">
+                            <input type="email" id="newUserEmail" placeholder="البريد الإلكتروني" class="w-full bg-white/70 rounded-xl p-3">
+                            <input type="password" id="newUserPassword" placeholder="كلمة المرور" class="w-full bg-white/70 rounded-xl p-3">
+                            <select id="newUserRole" class="w-full bg-white/70 rounded-xl p-3">
+                                <option value="cashier">كاشير</option>
+                                <option value="kitchen">طباخ</option>
+                                <option value="admin">مدير</option>
+                            </select>
+                            <button onclick="addNewUser()" class="w-full gold-gradient text-gray-900 py-3 rounded-xl font-black">إنشاء مستخدم</button>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card-light rounded-3xl p-5">
+                        <h3 class="text-xl font-black mb-4"><i class="fas fa-folder-plus ml-2 text-yellow-600"></i> إضافة صنف</h3>
+                        <div class="flex gap-2"><input type="text" id="newCatName" placeholder="اسم الصنف" class="flex-1 bg-white/70 rounded-xl p-3"><button onclick="addCategory()" class="gold-gradient px-6 rounded-xl font-bold"><i class="fas fa-plus"></i></button></div>
+                        <ul id="adminCatList" class="mt-4 space-y-2 max-h-60 overflow-y-auto"></ul>
+                    </div>
+                </div>
+                
+                <div class="glass-card-light rounded-3xl p-5">
+                    <h3 class="text-xl font-black mb-4"><i class="fas fa-plus-circle ml-2 text-green-600"></i> إضافة مادة</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="text" id="newProdName" placeholder="اسم المادة" class="bg-white/70 rounded-xl p-3">
+                        <input type="number" id="newProdPrice" placeholder="السعر" class="bg-white/70 rounded-xl p-3">
+                        <select id="newProdCat" class="bg-white/70 rounded-xl p-3"></select>
+                        <button onclick="addProduct()" class="bg-green-600 text-white py-3 rounded-xl font-black">إضافة</button>
+                    </div>
+                    <input type="text" id="newProdDesc" placeholder="وصف (اختياري)" class="w-full bg-white/70 rounded-xl p-3 mt-3">
+                    
+                    <div class="mt-6">
+                        <h4 class="font-bold mb-2">📋 قائمة المواد</h4>
+                        <div class="overflow-x-auto"><table class="w-full text-right"><thead><tr><th class="p-2">المادة</th><th class="p-2">الصنف</th><th class="p-2">السعر</th><th class="p-2"></th></tr></thead><tbody id="adminProdList"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
-        let currentCart = [], allProducts = [], allCategories = [], selectedCat = 'الكل', allOrders = [];
-        window.addEventListener('firebaseReady', () => loadAllData());
+        // ================= متغيرات عامة =================
+        let currentCart = [], allProducts = [], allCategories = [], allOrders = [], selectedCat = 'الكل';
+        let currentUser = null, userRole = null;
+        
+        // ================= نظام تسجيل الدخول =================
+        window.addEventListener('firebaseReady', () => {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    // تحديد صلاحية المستخدم (حالياً مبسطة - تقدر تخزنها في Firestore)
+                    if (user.email === 'admin@makola.com') userRole = 'admin';
+                    else if (user.email === 'kitchen@makola.com') userRole = 'kitchen';
+                    else userRole = 'cashier';
+                    
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    document.getElementById('userRoleDisplay').innerText = `${user.email} (${userRole})`;
+                    
+                    // إخفاء أزرار المدير لغير المدير
+                    if (userRole !== 'admin') {
+                        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+                    }
+                    
+                    loadAllData();
+                    
+                    // توجيه الطباخ مباشرة لشاشة الطلبات
+                    if (userRole === 'kitchen') {
+                        showOrders();
+                    }
+                } else {
+                    document.getElementById('loginScreen').classList.remove('hidden');
+                    document.getElementById('mainApp').classList.add('hidden');
+                }
+            });
+        });
+        
+        window.login = async () => {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (e) {
+                alert('خطأ في البريد أو كلمة المرور');
+            }
+        };
+        
+        window.logout = async () => {
+            await signOut(auth);
+        };
+        
+        window.addNewUser = async () => {
+            const email = document.getElementById('newUserEmail').value;
+            const password = document.getElementById('newUserPassword').value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert('✅ تم إنشاء المستخدم بنجاح');
+            } catch (e) {
+                alert('❌ ' + e.message);
+            }
+        };
 
+        // ================= تحميل البيانات =================
         async function loadAllData() {
             try {
-                const catSnap = await getDocs(collection(window.db, "categories"));
+                const catSnap = await getDocs(collection(db, "categories"));
                 allCategories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                const prodSnap = await getDocs(collection(window.db, "products"));
+                
+                const prodSnap = await getDocs(collection(db, "products"));
                 allProducts = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                const orderSnap = await getDocs(query(collection(window.db, "orders"), orderBy("createdAt", "desc")));
+                
+                const orderSnap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
                 allOrders = orderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 
-                renderCategoryGrid(); renderProductsGrid('الكل'); renderCart();
-                if (document.getElementById('ordersView') && !document.getElementById('ordersView').classList.contains('hidden')) renderOrdersView();
-                updateAllStats();
+                if (!document.getElementById('cashierView').classList.contains('hidden')) {
+                    renderCategoryGrid(); 
+                    renderProductsGrid('الكل'); 
+                    renderCart();
+                }
+                if (!document.getElementById('ordersView').classList.contains('hidden')) renderOrdersView();
+                if (!document.getElementById('reportsView').classList.contains('hidden')) renderReportsView();
+                if (!document.getElementById('adminView').classList.contains('hidden')) loadAdminData();
             } catch (e) { console.error(e); }
         }
 
-        // ========== دوال الكاشير ==========
+        // ========== واجهة الكاشير ==========
         function renderCategoryGrid() {
             const grid = document.getElementById('categoryGrid');
             let html = `<div onclick="filterProducts('الكل')" class="cat-card bg-gradient-to-br from-yellow-400 to-amber-600 p-2 rounded-2xl text-center font-black cursor-pointer ${selectedCat==='الكل'?'ring-4 ring-yellow-200':''}"><i class="fas fa-star"></i> الكل</div>`;
-            const colors = ['from-amber-100 to-orange-200', 'from-emerald-100 to-green-200', 'from-sky-100 to-blue-200', 'from-rose-100 to-pink-200'];
+            const colors = ['from-amber-100 to-orange-200', 'from-emerald-100 to-green-200', 'from-sky-100 to-blue-200'];
             allCategories.forEach((cat, i) => {
                 html += `<div onclick="filterProducts('${cat.id}')" class="cat-card bg-gradient-to-br ${colors[i%colors.length]} p-2 rounded-2xl text-center font-black cursor-pointer ${selectedCat===cat.id?'ring-4 ring-yellow-400':''}"><i class="fas fa-tag"></i> ${cat.name}</div>`;
             });
@@ -210,8 +395,8 @@
         function renderProductsGrid(catId, list = null) {
             const grid = document.getElementById('productsGrid');
             const filtered = list || (catId === 'الكل' ? allProducts : allProducts.filter(p => p.category_id == catId));
-            if (filtered.length === 0) { grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><i class="fas fa-box-open text-4xl mb-2"></i><p>ماكو مواد</p></div>'; return; }
-            grid.innerHTML = filtered.map(prod => `<div onclick="addToCart('${prod.id}')" class="product-card bg-white/90 p-3 rounded-2xl shadow-lg cursor-pointer"><div class="flex justify-between"><h4 class="font-black">${prod.name}</h4><span class="gold-gradient px-2 py-0.5 rounded-xl text-sm font-black">${prod.price} د.ع</span></div><p class="text-xs text-gray-500 mt-1">${prod.description||''}</p></div>`).join('');
+            if (filtered.length === 0) { grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><p>ماكو مواد</p></div>'; return; }
+            grid.innerHTML = filtered.map(prod => `<div onclick="addToCart('${prod.id}')" class="product-card bg-white/90 p-3 rounded-2xl shadow-lg cursor-pointer"><div class="flex justify-between"><h4 class="font-black">${prod.name}</h4><span class="gold-gradient px-2 py-0.5 rounded-xl text-sm font-black">${prod.price} د.ع</span></div></div>`).join('');
         }
 
         window.addToCart = (id) => { let p = allProducts.find(x=>x.id===id); let e = currentCart.find(i=>i.id===id); e ? e.quantity++ : currentCart.push({id:p.id, name:p.name, price:p.price, quantity:1}); renderCart(); };
@@ -220,7 +405,7 @@
         function renderCart() {
             let total=0, html=''; 
             currentCart.forEach(i=>{ total+=i.price*i.quantity; html+=`<div class="flex justify-between items-center bg-white/10 p-3 rounded-2xl"><div><span class="font-bold">${i.name}</span><span class="text-xs block">${i.price} د.ع</span></div><div class="flex items-center gap-2"><button onclick="updateQuantity('${i.id}',-1)" class="bg-red-500/80 w-7 h-7 rounded-full">➖</button><span class="w-6 text-center">${i.quantity}</span><button onclick="updateQuantity('${i.id}',1)" class="bg-green-500/80 w-7 h-7 rounded-full">➕</button></div></div>`; });
-            document.getElementById('cartItems').innerHTML = html || '<p class="text-center text-gray-300 py-5"><i class="fas fa-shopping-cart text-3xl opacity-50 mb-2"></i><br>السلة فارغة</p>';
+            document.getElementById('cartItems').innerHTML = html || '<p class="text-center text-gray-300 py-5">السلة فارغة</p>';
             document.getElementById('cartTotal').innerText = total.toFixed(2);
             document.getElementById('cartCount').innerText = currentCart.reduce((s,i)=> s+i.quantity, 0);
         }
@@ -230,28 +415,24 @@
         window.submitOrder = async function() {
             if(currentCart.length===0) return alert('السلة فارغة!');
             const total = currentCart.reduce((s,i)=> s+(i.price*i.quantity), 0);
-            
-            // توليد رقم طلب بسيط (3 أرقام)
-            const orderNumber = Math.floor(100 + Math.random() * 900); // رقم بين 100 و 999
+            const orderNumber = Math.floor(100 + Math.random() * 900);
             
             try {
-                const orderRef = await addDoc(collection(window.db, "orders"), { 
-                    orderNumber: orderNumber,
-                    items: currentCart, 
-                    total, 
-                    status: 'جديد',
-                    createdAt: new Date() 
+                const orderRef = await addDoc(collection(db, "orders"), { 
+                    orderNumber, items: currentCart, total, status: 'جديد', createdAt: new Date() 
                 });
                 
-                // رسالة تليجرام مع رقم الطلب
+                // صوت تنبيه
+                document.getElementById('newOrderSound').play();
+                
+                // تليجرام
                 let msg = `🔥 *طلب جديد #${orderNumber}* 🔥\n🆔 ${orderRef.id.slice(-4)}\n📋 `;
                 currentCart.forEach(i => msg += `${i.quantity}x ${i.name}\n`);
                 msg += `\n💰 *الإجمالي: ${total.toFixed(2)} دينار*`;
                 
-                const url = `https://api.telegram.org/bot${window.TELEGRAM_BOT_TOKEN}/sendMessage`;
+                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
                 const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                
-                await fetch(proxy, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: window.TELEGRAM_CHAT_ID, text: msg, parse_mode: 'Markdown' }) });
+                await fetch(proxy, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: 'Markdown' }) });
                 
                 alert(`✅ تم إنشاء الطلب رقم #${orderNumber} بنجاح!`);
                 clearCart();
@@ -259,20 +440,18 @@
             } catch (e) { alert('❌ فشل الاتصال.'); }
         };
 
-        // ========== شاشة الطلبات (جديد) ==========
+        // ========== شاشة الطلبات ==========
         function renderOrdersView() {
             const today = new Date().toDateString();
             const todayOrders = allOrders.filter(o => o.createdAt && new Date(o.createdAt.toDate()).toDateString() === today);
             const activeOrders = allOrders.filter(o => o.status === 'جديد' || o.status === 'جاهز');
             const completedOrders = allOrders.filter(o => o.status === 'تم التسليم').slice(0, 10);
             
-            // تحديث الإحصائيات
             const totalSales = todayOrders.reduce((s, o) => s + o.total, 0);
             document.getElementById('todayOrdersCount').innerText = todayOrders.length;
             document.getElementById('todaySales').innerText = totalSales.toFixed(2);
             document.getElementById('avgOrder').innerText = todayOrders.length ? (totalSales / todayOrders.length).toFixed(2) : '0';
             
-            // الطلبات النشطة
             const activeDiv = document.getElementById('activeOrdersList');
             if (activeOrders.length === 0) activeDiv.innerHTML = '<p class="text-center text-gray-400 py-5">ماكو طلبات معلقة</p>';
             else {
@@ -288,13 +467,13 @@
                             <div class="flex gap-2">
                                 ${o.status === 'جديد' ? `<button onclick="updateOrderStatus('${o.id}', 'جاهز')" class="bg-yellow-500 text-white px-3 py-1 rounded-lg text-sm">✅ جاهز</button>` : ''}
                                 ${o.status === 'جاهز' ? `<button onclick="updateOrderStatus('${o.id}', 'تم التسليم')" class="bg-green-600 text-white px-3 py-1 rounded-lg text-sm">✔️ تم التسليم</button>` : ''}
+                                <button onclick="printOrderInvoice('${o.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm"><i class="fas fa-print"></i></button>
                             </div>
                         </div>
                     </div>
                 `).join('');
             }
             
-            // الطلبات المنجزة
             const completedDiv = document.getElementById('completedOrdersList');
             if (completedOrders.length === 0) completedDiv.innerHTML = '<p class="text-center text-gray-400">ماكو طلبات منجزة</p>';
             else {
@@ -308,57 +487,147 @@
         }
 
         window.updateOrderStatus = async (orderId, newStatus) => {
-            await updateDoc(doc(window.db, "orders", orderId), { status: newStatus });
+            await updateDoc(doc(db, "orders", orderId), { status: newStatus });
+            if (newStatus === 'جاهز') document.getElementById('readyOrderSound').play();
             loadAllData();
+        };
+
+        // ========== طباعة فاتورة PDF ==========
+        window.printOrderInvoice = (orderId) => {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html dir="rtl">
+                    <head><title>فاتورة #${order.orderNumber}</title>
+                    <style>
+                        body { font-family: 'Cairo', sans-serif; text-align: center; padding: 20px; }
+                        .header { border-bottom: 2px dashed #d97706; padding-bottom: 10px; margin-bottom: 20px; }
+                        .item { display: flex; justify-content: space-between; margin: 10px 0; }
+                        .total { border-top: 2px dashed #d97706; margin-top: 20px; padding-top: 20px; font-size: 1.5em; font-weight: bold; }
+                        .footer { margin-top: 30px; color: #666; font-size: 0.8em; }
+                    </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>🧉 ماكولا سويعه</h1>
+                            <p>نكهة بغداد • جودة الملوك</p>
+                            <p>فاتورة رقم #${order.orderNumber}</p>
+                            <p>${new Date(order.createdAt.toDate()).toLocaleString('ar-IQ')}</p>
+                        </div>
+                        <div>
+                            ${order.items.map(i => `<div class="item"><span>${i.quantity}x ${i.name}</span><span>${(i.price * i.quantity).toFixed(2)} د.ع</span></div>`).join('')}
+                        </div>
+                        <div class="total">
+                            <div class="item"><span>الإجمالي</span><span>${order.total.toFixed(2)} د.ع</span></div>
+                        </div>
+                        <div class="footer">
+                            <p>شكراً لزيارتكم • نتمنى لكم يوماً سعيداً</p>
+                            <p>📞 0770 000 0000</p>
+                        </div>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        };
+
+        // ========== شاشة التقارير ==========
+        function renderReportsView() {
+            const totalSales = allOrders.reduce((s, o) => s + o.total, 0);
+            document.getElementById('totalSalesAll').innerText = totalSales.toFixed(2);
+            document.getElementById('totalOrdersAll').innerText = allOrders.length;
+            document.getElementById('totalProductsAll').innerText = allProducts.length;
+            document.getElementById('totalCategoriesAll').innerText = allCategories.length;
+            
+            // رسم بياني للمنتجات الأكثر مبيعاً
+            const productSales = {};
+            allOrders.forEach(o => o.items.forEach(i => productSales[i.name] = (productSales[i.name] || 0) + i.quantity));
+            const topProducts = Object.entries(productSales).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            
+            new Chart(document.getElementById('topProductsChart'), {
+                type: 'doughnut',
+                data: { labels: topProducts.map(p => p[0]), datasets: [{ data: topProducts.map(p => p[1]), backgroundColor: ['#fbbf24', '#d97706', '#f59e0b', '#b45309', '#eab308'] }] }
+            });
+            
+            // رسم بياني للمبيعات الأسبوعية
+            const last7Days = [...Array(7)].map((_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                return d.toISOString().split('T')[0];
+            }).reverse();
+            
+            const dailySales = last7Days.map(day => {
+                return allOrders.filter(o => o.createdAt && new Date(o.createdAt.toDate()).toISOString().split('T')[0] === day).reduce((s, o) => s + o.total, 0);
+            });
+            
+            new Chart(document.getElementById('weeklySalesChart'), {
+                type: 'line',
+                data: { labels: last7Days.map(d => new Date(d).toLocaleDateString('ar-IQ', {weekday: 'short'})), datasets: [{ label: 'المبيعات (د.ع)', data: dailySales, borderColor: '#fbbf24', tension: 0.4 }] }
+            });
+        }
+
+        window.exportToExcel = () => {
+            const data = allOrders.map(o => ({
+                'رقم الطلب': o.orderNumber,
+                'التاريخ': o.createdAt ? new Date(o.createdAt.toDate()).toLocaleString('ar-IQ') : '',
+                'المنتجات': o.items.map(i => `${i.quantity}x ${i.name}`).join(', '),
+                'الإجمالي': o.total,
+                'الحالة': o.status
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "الطلبات");
+            XLSX.writeFile(wb, `تقرير_ماكولا_سويعه_${new Date().toISOString().split('T')[0]}.xlsx`);
+        };
+
+        window.exportToPDF = async () => {
+            const element = document.getElementById('reportsView');
+            const canvas = await html2canvas(element);
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jspdf.jsPDF({ orientation: 'landscape' });
+            pdf.addImage(imgData, 'PNG', 10, 10, 280, 150);
+            pdf.save(`تقرير_ماكولا_سويعه_${new Date().toISOString().split('T')[0]}.pdf`);
         };
 
         // ========== لوحة الإدارة ==========
         async function loadAdminData() {
-            const catSnap = await getDocs(collection(window.db, "categories"));
-            allCategories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             document.getElementById('newProdCat').innerHTML = allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             document.getElementById('adminCatList').innerHTML = allCategories.map(c => `<li class="flex justify-between bg-white/50 p-2 rounded-xl"><span>📁 ${c.name}</span><button onclick="deleteCategory('${c.id}')" class="text-red-500">🗑️</button></li>`).join('');
             
-            const prodSnap = await getDocs(collection(window.db, "products"));
-            const prods = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             const catMap = Object.fromEntries(allCategories.map(c => [c.id, c.name]));
-            document.getElementById('adminProdList').innerHTML = prods.map(p => `<tr><td class="p-2">${p.name}</td><td class="p-2">${catMap[p.category_id]||''}</td><td class="p-2">${p.price} د.ع</td><td class="p-2"><button onclick="deleteProduct('${p.id}')" class="text-red-500">🗑️</button></td></tr>`).join('');
-            
-            document.getElementById('statsCats').innerText = allCategories.length;
-            document.getElementById('statsProds').innerText = prods.length;
-            document.getElementById('statsTotalOrders').innerText = allOrders.length;
+            document.getElementById('adminProdList').innerHTML = allProducts.map(p => `<tr><td class="p-2">${p.name}</td><td class="p-2">${catMap[p.category_id]||''}</td><td class="p-2">${p.price} د.ع</td><td class="p-2"><button onclick="deleteProduct('${p.id}')" class="text-red-500">🗑️</button></td></tr>`).join('');
         }
 
-        function updateAllStats() {
-            if (document.getElementById('ordersView') && !document.getElementById('ordersView').classList.contains('hidden')) renderOrdersView();
-            if (document.getElementById('adminView') && !document.getElementById('adminView').classList.contains('hidden')) loadAdminData();
-        }
+        window.addCategory = async () => { const n = document.getElementById('newCatName').value; if(n) { await addDoc(collection(db, "categories"), { name: n }); document.getElementById('newCatName').value = ''; loadAllData(); } };
+        window.deleteCategory = async (id) => { await deleteDoc(doc(db, "categories", id)); loadAllData(); };
+        window.addProduct = async () => {
+            const n = document.getElementById('newProdName').value, p = +document.getElementById('newProdPrice').value, c = document.getElementById('newProdCat').value;
+            if(n && p && c) { await addDoc(collection(db, "products"), { name: n, price: p, category_id: c }); document.getElementById('newProdName').value = ''; document.getElementById('newProdPrice').value = ''; loadAllData(); }
+        };
+        window.deleteProduct = async (id) => { await deleteDoc(doc(db, "products", id)); loadAllData(); };
 
         // ========== التنقل ==========
         window.showCashier = () => { hideAll(); document.getElementById('cashierView').classList.remove('hidden'); setActiveTab('btnCashier'); loadAllData(); };
         window.showOrders = () => { hideAll(); document.getElementById('ordersView').classList.remove('hidden'); setActiveTab('btnOrders'); loadAllData(); };
+        window.showReports = () => { hideAll(); document.getElementById('reportsView').classList.remove('hidden'); setActiveTab('btnReports'); loadAllData(); };
         window.showAdmin = () => { hideAll(); document.getElementById('adminView').classList.remove('hidden'); setActiveTab('btnAdmin'); loadAllData(); };
         
-        function hideAll() { ['cashierView', 'ordersView', 'adminView'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+        function hideAll() { ['cashierView', 'ordersView', 'reportsView', 'adminView'].forEach(id => document.getElementById(id).classList.add('hidden')); }
         function setActiveTab(activeId) {
-            ['btnCashier', 'btnOrders', 'btnAdmin'].forEach(id => {
+            ['btnCashier', 'btnOrders', 'btnReports', 'btnAdmin'].forEach(id => {
                 const btn = document.getElementById(id);
-                btn.classList.remove('tab-active', 'gold-gradient');
-                btn.classList.add('bg-gray-700', 'text-white');
+                if (btn) {
+                    btn.classList.remove('tab-active', 'gold-gradient');
+                    btn.classList.add('bg-gray-700', 'text-white');
+                }
             });
             const activeBtn = document.getElementById(activeId);
-            activeBtn.classList.add('tab-active', 'gold-gradient');
-            activeBtn.classList.remove('bg-gray-700', 'text-white');
+            if (activeBtn) {
+                activeBtn.classList.add('tab-active', 'gold-gradient');
+                activeBtn.classList.remove('bg-gray-700', 'text-white');
+            }
         }
-
-        // ========== دوال الإضافة والحذف ==========
-        window.addCategory = async () => { const n = document.getElementById('newCatName').value; if(n) { await addDoc(collection(window.db, "categories"), { name: n }); document.getElementById('newCatName').value = ''; loadAllData(); } };
-        window.deleteCategory = async (id) => { await deleteDoc(doc(window.db, "categories", id)); loadAllData(); };
-        window.addProduct = async () => {
-            const n = document.getElementById('newProdName').value, p = +document.getElementById('newProdPrice').value, d = document.getElementById('newProdDesc').value, c = document.getElementById('newProdCat').value;
-            if(n && p && c) { await addDoc(collection(window.db, "products"), { name: n, price: p, description: d, category_id: c }); document.getElementById('newProdName').value = ''; document.getElementById('newProdPrice').value = ''; document.getElementById('newProdDesc').value = ''; loadAllData(); }
-        };
-        window.deleteProduct = async (id) => { await deleteDoc(doc(window.db, "products", id)); loadAllData(); };
     </script>
 </body>
 </html>
