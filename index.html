@@ -24,32 +24,26 @@
         * { font-family: 'Cairo', sans-serif; }
         body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); background-attachment: fixed; }
         
-        /* تأثيرات زجاجية */
         .glass-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
         .glass-card-light { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.5); }
         
-        /* تأثيرات الضغط */
         .cat-card:active, .product-card:active { transform: scale(0.96); }
         .product-card { transition: all 0.2s; border-radius: 24px; }
         .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3); }
         
-        /* سكرول بار */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 10px; }
         
-        /* ألوان ذهبية */
         .gold-gradient { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
         .gold-text { background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .tab-active { background: linear-gradient(135deg, #fbbf24, #d97706) !important; color: #1a1a2e !important; font-weight: 900; }
         
-        /* حالة الطلب */
         .status-badge { padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .status-new { background: #fef3c7; color: #92400e; }
         .status-ready { background: #d1fae5; color: #065f46; }
         .status-done { background: #e0e7ff; color: #3730a3; }
 
-        /* شاشة تسجيل الدخول */
         .login-container {
             background: rgba(255,255,255,0.05);
             backdrop-filter: blur(20px);
@@ -59,7 +53,7 @@
 </head>
 <body class="h-screen flex flex-col p-3">
 
-    <!-- ================= إعدادات Firebase + تليجرام ================= -->
+    <!-- ================= إعدادات Firebase (بدون Authentication) ================= -->
     <script type="module">
         const firebaseConfig = {
             apiKey: "AIzaSy5S-w-4dH0aVyz_6QbyADJpWuSetSNwTPM",
@@ -74,15 +68,12 @@
         const TELEGRAM_CHAT_ID = '909090929';
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
         
         window.db = db;
-        window.auth = auth;
         window.TELEGRAM_BOT_TOKEN = TELEGRAM_BOT_TOKEN;
         window.TELEGRAM_CHAT_ID = TELEGRAM_CHAT_ID;
         window.collection = collection;
@@ -93,13 +84,8 @@
         window.doc = doc;
         window.query = query;
         window.orderBy = orderBy;
-        window.where = where;
-        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-        window.signOut = signOut;
-        window.onAuthStateChanged = onAuthStateChanged;
-        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
         
-        console.log("🔥 ماكولا سويعه - النظام الذهبي جاهز");
+        console.log("🔥 ماكولا سويعه - جاهز (بدون Authentication)");
         window.dispatchEvent(new Event('firebaseReady'));
     </script>
 
@@ -107,7 +93,7 @@
     <audio id="newOrderSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
     <audio id="readyOrderSound" src="https://www.soundjay.com/misc/sounds/ding-2.mp3" preload="auto"></audio>
 
-    <!-- ================= شاشة تسجيل الدخول ================= -->
+    <!-- ================= شاشة تسجيل الدخول (Hardcoded) ================= -->
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-50" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
         <div class="login-container w-full max-w-md p-8 rounded-3xl shadow-2xl">
             <div class="text-center mb-8">
@@ -118,56 +104,42 @@
                 <p class="text-gray-400 text-sm mt-1">نظام إدارة المقهى الذهبي</p>
             </div>
             
-            <!-- قائمة منسدلة للمستخدمين التجريبيين -->
+            <!-- قائمة منسدلة للمستخدمين -->
             <div class="mb-4">
-                <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-users ml-2"></i> اختر مستخدم تجريبي</label>
-                <select id="demoUserSelect" onchange="fillDemoUser()" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white">
-                    <option value="">-- اختر --</option>
-                    <option value="admin@makola.com|123456">👑 مدير (admin / 123456)</option>
-                    <option value="cashier@makola.com|123456">💰 كاشير (cashier / 123456)</option>
-                    <option value="kitchen@makola.com|123456">🍳 طباخ (kitchen / 123456)</option>
+                <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-users ml-2"></i> اختر نوع المستخدم</label>
+                <select id="userTypeSelect" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white">
+                    <option value="admin">👑 مدير</option>
+                    <option value="cashier">💰 كاشير</option>
+                    <option value="kitchen">🍳 طباخ</option>
                 </select>
             </div>
             
             <div class="space-y-4">
                 <div>
-                    <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-envelope ml-2"></i> البريد الإلكتروني</label>
-                    <input type="email" id="loginEmail" placeholder="example@email.com" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none">
+                    <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-user ml-2"></i> اسم المستخدم</label>
+                    <input type="text" id="loginUsername" placeholder="admin" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-lock ml-2"></i> كلمة المرور</label>
                     <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white placeholder-gray-400 focus:border-yellow-500 focus:outline-none">
                 </div>
-                <button onclick="login()" class="w-full gold-gradient text-gray-900 py-3 rounded-xl font-black text-lg shadow-lg hover:shadow-yellow-500/50 transition">
+                <button onclick="hardcodedLogin()" class="w-full gold-gradient text-gray-900 py-3 rounded-xl font-black text-lg shadow-lg hover:shadow-yellow-500/50 transition">
                     <i class="fas fa-sign-in-alt ml-2"></i> دخول
                 </button>
             </div>
             
-            <!-- أزرار إنشاء الحسابات -->
-            <div class="mt-4 space-y-2">
-                <button onclick="createAdminAccount()" class="w-full bg-green-600/80 hover:bg-green-700 text-white py-2 rounded-xl font-bold text-sm transition">
-                    <i class="fas fa-user-plus ml-2"></i> إنشاء حساب المدير تلقائياً
-                </button>
-                <button onclick="createAllAccounts()" class="w-full bg-purple-600/80 hover:bg-purple-700 text-white py-2 rounded-xl font-bold text-sm transition">
-                    <i class="fas fa-users ml-2"></i> إنشاء جميع الحسابات التجريبية
-                </button>
-                <button onclick="skipLogin()" class="w-full bg-gray-600/50 hover:bg-gray-700 text-white py-2 rounded-xl font-bold text-sm transition">
-                    <i class="fas fa-fast-forward ml-2"></i> تجربة سريعة (بدون تسجيل)
-                </button>
-            </div>
-            
-            <div class="mt-4 text-center text-gray-400 text-xs">
-                <p>للاستخدام التجريبي السريع:</p>
-                <p>مدير: admin@makola.com / 123456</p>
-                <p>كاشير: cashier@makola.com / 123456</p>
+            <div class="mt-6 text-center text-gray-400 text-xs">
+                <p>بيانات الدخول التجريبية:</p>
+                <p>مدير: admin / 123456</p>
+                <p>كاشير: cashier / 123456</p>
+                <p>طباخ: kitchen / 123456</p>
             </div>
         </div>
     </div>
 
-    <!-- ================= التطبيق الرئيسي (مخفي حتى تسجيل الدخول) ================= -->
+    <!-- ================= التطبيق الرئيسي ================= -->
     <div id="mainApp" class="hidden h-full flex flex-col">
         
-        <!-- الهيدر -->
         <header class="glass-card rounded-3xl p-3 mb-3 flex justify-between items-center text-white shadow-2xl">
             <div class="flex items-center gap-2">
                 <div class="gold-gradient p-2 rounded-2xl"><i class="fas fa-crown text-2xl text-gray-900"></i></div>
@@ -185,7 +157,7 @@
             </div>
         </header>
 
-        <!-- ================= واجهة الكاشير ================= -->
+        <!-- واجهة الكاشير -->
         <main id="cashierView" class="flex-1 flex flex-col md:flex-row gap-3 overflow-hidden">
             <div class="flex-[3] flex flex-col gap-3 overflow-hidden">
                 <div class="glass-card-light rounded-3xl p-4">
@@ -220,7 +192,7 @@
             </div>
         </main>
 
-        <!-- ================= شاشة الطلبات ================= -->
+        <!-- شاشة الطلبات -->
         <main id="ordersView" class="flex-1 overflow-y-auto hidden">
             <div class="max-w-7xl mx-auto space-y-4">
                 <div class="grid grid-cols-3 gap-3">
@@ -241,7 +213,7 @@
             </div>
         </main>
 
-        <!-- ================= شاشة التقارير (للمدير فقط) ================= -->
+        <!-- شاشة التقارير -->
         <main id="reportsView" class="flex-1 overflow-y-auto hidden">
             <div class="max-w-7xl mx-auto space-y-4">
                 <div class="flex gap-3 justify-end">
@@ -269,24 +241,10 @@
             </div>
         </main>
 
-        <!-- ================= لوحة الإدارة ================= -->
+        <!-- لوحة الإدارة -->
         <main id="adminView" class="flex-1 overflow-y-auto hidden">
             <div class="max-w-7xl mx-auto space-y-4">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div class="glass-card-light rounded-3xl p-5">
-                        <h3 class="text-xl font-black mb-4"><i class="fas fa-user-plus ml-2 text-yellow-600"></i> إضافة مستخدم جديد</h3>
-                        <div class="space-y-3">
-                            <input type="email" id="newUserEmail" placeholder="البريد الإلكتروني" class="w-full bg-white/70 rounded-xl p-3">
-                            <input type="password" id="newUserPassword" placeholder="كلمة المرور" class="w-full bg-white/70 rounded-xl p-3">
-                            <select id="newUserRole" class="w-full bg-white/70 rounded-xl p-3">
-                                <option value="cashier">كاشير</option>
-                                <option value="kitchen">طباخ</option>
-                                <option value="admin">مدير</option>
-                            </select>
-                            <button onclick="addNewUser()" class="w-full gold-gradient text-gray-900 py-3 rounded-xl font-black">إنشاء مستخدم</button>
-                        </div>
-                    </div>
-                    
                     <div class="glass-card-light rounded-3xl p-5">
                         <h3 class="text-xl font-black mb-4"><i class="fas fa-folder-plus ml-2 text-yellow-600"></i> إضافة صنف</h3>
                         <div class="flex gap-2"><input type="text" id="newCatName" placeholder="اسم الصنف" class="flex-1 bg-white/70 rounded-xl p-3"><button onclick="addCategory()" class="gold-gradient px-6 rounded-xl font-bold"><i class="fas fa-plus"></i></button></div>
@@ -316,137 +274,62 @@
     <script>
         // ================= متغيرات عامة =================
         let currentCart = [], allProducts = [], allCategories = [], allOrders = [], selectedCat = 'الكل';
-        let currentUser = null, userRole = null;
+        let userRole = 'admin';
         let topProductsChartInstance = null, weeklySalesChartInstance = null;
         
-        // ================= نظام تسجيل الدخول =================
-        window.addEventListener('firebaseReady', () => {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    if (user.email === 'admin@makola.com' || user.email === 'guest@makola.com') userRole = 'admin';
-                    else if (user.email === 'kitchen@makola.com') userRole = 'kitchen';
-                    else userRole = 'cashier';
-                    
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('mainApp').classList.remove('hidden');
-                    document.getElementById('userRoleDisplay').innerText = `${user.email} (${userRole})`;
-                    
-                    if (userRole !== 'admin') {
-                        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
-                    }
-                    
-                    loadAllData();
-                    
-                    if (userRole === 'kitchen') showOrders();
-                } else {
-                    document.getElementById('loginScreen').classList.remove('hidden');
-                    document.getElementById('mainApp').classList.add('hidden');
-                }
-            });
-        });
-        
-        // دوال تسجيل الدخول وإنشاء الحسابات
-        window.fillDemoUser = () => {
-            const select = document.getElementById('demoUserSelect');
-            const value = select.value;
-            if (value) {
-                const [email, password] = value.split('|');
-                document.getElementById('loginEmail').value = email;
-                document.getElementById('loginPassword').value = password;
+        // ================= نظام تسجيل الدخول (Hardcoded) =================
+        window.hardcodedLogin = () => {
+            const username = document.getElementById('loginUsername').value.toLowerCase();
+            const password = document.getElementById('loginPassword').value;
+            const userType = document.getElementById('userTypeSelect').value;
+            
+            // قائمة المستخدمين الثابتة
+            const validUsers = {
+                'admin': { password: '123456', role: 'admin' },
+                'cashier': { password: '123456', role: 'cashier' },
+                'kitchen': { password: '123456', role: 'kitchen' }
+            };
+            
+            if (validUsers[username] && validUsers[username].password === password) {
+                userRole = validUsers[username].role;
+            } else if (username === '' || password === '') {
+                // إذا دخل بدون كتابة شيء، نستخدم نوع المستخدم المختار
+                userRole = userType;
+            } else {
+                alert('❌ اسم المستخدم أو كلمة المرور غير صحيحة!\n\nجرب:\nمدير: admin / 123456\nكاشير: cashier / 123456\nطباخ: kitchen / 123456');
+                return;
             }
-        };
-
-        window.createAdminAccount = async () => {
-            const email = 'admin@makola.com';
-            const password = '123456';
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                alert('✅ تم إنشاء حساب المدير بنجاح!\n\nالإيميل: admin@makola.com\nكلمة المرور: 123456');
-                document.getElementById('loginEmail').value = email;
-                document.getElementById('loginPassword').value = password;
-            } catch (e) {
-                if (e.code === 'auth/email-already-in-use') {
-                    alert('⚠️ الحساب موجود مسبقاً. تم تعبئة البيانات جاهزة للدخول.');
-                    document.getElementById('loginEmail').value = email;
-                    document.getElementById('loginPassword').value = password;
-                } else {
-                    alert('❌ خطأ: ' + e.message);
-                }
-            }
-        };
-
-        window.createAllAccounts = async () => {
-            const accounts = [
-                { email: 'admin@makola.com', password: '123456', role: '👑 مدير' },
-                { email: 'cashier@makola.com', password: '123456', role: '💰 كاشير' },
-                { email: 'kitchen@makola.com', password: '123456', role: '🍳 طباخ' }
-            ];
-            let message = 'نتائج إنشاء الحسابات:\n\n';
-            let successCount = 0;
-            for (const acc of accounts) {
-                try {
-                    await createUserWithEmailAndPassword(auth, acc.email, acc.password);
-                    message += `✅ ${acc.role}: تم الإنشاء\n`;
-                    successCount++;
-                } catch (e) {
-                    if (e.code === 'auth/email-already-in-use') {
-                        message += `⚠️ ${acc.role}: موجود مسبقاً\n`;
-                    } else {
-                        message += `❌ ${acc.role}: ${e.message}\n`;
-                    }
-                }
-            }
-            message += `\n📊 تم بنجاح: ${successCount} من ${accounts.length}`;
-            message += `\n\n🔑 بيانات المدير:\nadmin@makola.com / 123456`;
-            alert(message);
-            document.getElementById('loginEmail').value = 'admin@makola.com';
-            document.getElementById('loginPassword').value = '123456';
-        };
-
-        window.skipLogin = () => {
-            currentUser = { email: 'guest@makola.com' };
-            userRole = 'admin';
+            
+            // فتح التطبيق
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('userRoleDisplay').innerText = 'وضع التجربة (مدير)';
-            document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            
+            // عرض الصلاحية
+            const roleNames = { 'admin': 'مدير', 'cashier': 'كاشير', 'kitchen': 'طباخ' };
+            document.getElementById('userRoleDisplay').innerText = `${roleNames[userRole]} - ماكولا سويعه`;
+            
+            // إخفاء أزرار المدير لغير المدير
+            if (userRole !== 'admin') {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+            }
+            
             loadAllData();
-        };
-        
-        window.login = async () => {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (e) {
-                alert('❌ خطأ في البريد أو كلمة المرور!\n\nتأكد من البيانات أو استخدم أزرار الإنشاء التلقائي.');
+            
+            // توجيه الطباخ مباشرة لشاشة الطلبات
+            if (userRole === 'kitchen') {
+                showOrders();
             }
         };
         
-        window.logout = async () => {
-            if (currentUser?.email === 'guest@makola.com') {
-                location.reload();
-            } else {
-                await signOut(auth);
-            }
-        };
-        
-        window.addNewUser = async () => {
-            const email = document.getElementById('newUserEmail').value;
-            const password = document.getElementById('newUserPassword').value;
-            if (!email || !password) return alert('الرجاء إدخال البريد وكلمة المرور');
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                alert('✅ تم إنشاء المستخدم بنجاح');
-                document.getElementById('newUserEmail').value = '';
-                document.getElementById('newUserPassword').value = '';
-            } catch (e) {
-                alert('❌ ' + e.message);
-            }
+        window.logout = () => {
+            location.reload();
         };
 
         // ================= تحميل البيانات =================
+        window.addEventListener('firebaseReady', () => {
+            // ما يحتاج ننتظر تسجيل دخول لأن النظام يشتغل مباشرة بعد الدخول
+        });
+
         async function loadAllData() {
             try {
                 const catSnap = await getDocs(collection(db, "categories"));
