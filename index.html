@@ -118,6 +118,17 @@
                 <p class="text-gray-400 text-sm mt-1">نظام إدارة المقهى الذهبي</p>
             </div>
             
+            <!-- قائمة منسدلة للمستخدمين التجريبيين -->
+            <div class="mb-4">
+                <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-users ml-2"></i> اختر مستخدم تجريبي</label>
+                <select id="demoUserSelect" onchange="fillDemoUser()" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white">
+                    <option value="">-- اختر --</option>
+                    <option value="admin@makola.com|123456">👑 مدير (admin / 123456)</option>
+                    <option value="cashier@makola.com|123456">💰 كاشير (cashier / 123456)</option>
+                    <option value="kitchen@makola.com|123456">🍳 طباخ (kitchen / 123456)</option>
+                </select>
+            </div>
+            
             <div class="space-y-4">
                 <div>
                     <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-envelope ml-2"></i> البريد الإلكتروني</label>
@@ -132,8 +143,21 @@
                 </button>
             </div>
             
-            <div class="mt-6 text-center text-gray-400 text-xs">
-                <p>للاستخدام التجريبي:</p>
+            <!-- أزرار إنشاء الحسابات -->
+            <div class="mt-4 space-y-2">
+                <button onclick="createAdminAccount()" class="w-full bg-green-600/80 hover:bg-green-700 text-white py-2 rounded-xl font-bold text-sm transition">
+                    <i class="fas fa-user-plus ml-2"></i> إنشاء حساب المدير تلقائياً
+                </button>
+                <button onclick="createAllAccounts()" class="w-full bg-purple-600/80 hover:bg-purple-700 text-white py-2 rounded-xl font-bold text-sm transition">
+                    <i class="fas fa-users ml-2"></i> إنشاء جميع الحسابات التجريبية
+                </button>
+                <button onclick="skipLogin()" class="w-full bg-gray-600/50 hover:bg-gray-700 text-white py-2 rounded-xl font-bold text-sm transition">
+                    <i class="fas fa-fast-forward ml-2"></i> تجربة سريعة (بدون تسجيل)
+                </button>
+            </div>
+            
+            <div class="mt-4 text-center text-gray-400 text-xs">
+                <p>للاستخدام التجريبي السريع:</p>
                 <p>مدير: admin@makola.com / 123456</p>
                 <p>كاشير: cashier@makola.com / 123456</p>
             </div>
@@ -220,14 +244,11 @@
         <!-- ================= شاشة التقارير (للمدير فقط) ================= -->
         <main id="reportsView" class="flex-1 overflow-y-auto hidden">
             <div class="max-w-7xl mx-auto space-y-4">
-                <!-- أزرار التصدير -->
                 <div class="flex gap-3 justify-end">
                     <button onclick="exportToExcel()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-file-excel ml-2"></i> تصدير Excel</button>
                     <button onclick="exportToPDF()" class="bg-red-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-file-pdf ml-2"></i> تصدير PDF</button>
-                    <button onclick="printInvoicePDF()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-print ml-2"></i> فاتورة PDF</button>
                 </div>
                 
-                <!-- إحصائيات -->
                 <div class="grid grid-cols-4 gap-3">
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">إجمالي المبيعات</p><p class="text-2xl font-black"><span id="totalSalesAll">0</span> د.ع</p></div>
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">عدد الطلبات</p><p class="text-2xl font-black" id="totalOrdersAll">0</p></div>
@@ -235,7 +256,6 @@
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">عدد الأصناف</p><p class="text-2xl font-black" id="totalCategoriesAll">0</p></div>
                 </div>
                 
-                <!-- رسوم بيانية -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div class="glass-card-light rounded-3xl p-5">
                         <h3 class="font-black mb-4">📊 أكثر المنتجات مبيعاً</h3>
@@ -297,14 +317,14 @@
         // ================= متغيرات عامة =================
         let currentCart = [], allProducts = [], allCategories = [], allOrders = [], selectedCat = 'الكل';
         let currentUser = null, userRole = null;
+        let topProductsChartInstance = null, weeklySalesChartInstance = null;
         
         // ================= نظام تسجيل الدخول =================
         window.addEventListener('firebaseReady', () => {
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
-                    // تحديد صلاحية المستخدم (حالياً مبسطة - تقدر تخزنها في Firestore)
-                    if (user.email === 'admin@makola.com') userRole = 'admin';
+                    if (user.email === 'admin@makola.com' || user.email === 'guest@makola.com') userRole = 'admin';
                     else if (user.email === 'kitchen@makola.com') userRole = 'kitchen';
                     else userRole = 'cashier';
                     
@@ -312,17 +332,13 @@
                     document.getElementById('mainApp').classList.remove('hidden');
                     document.getElementById('userRoleDisplay').innerText = `${user.email} (${userRole})`;
                     
-                    // إخفاء أزرار المدير لغير المدير
                     if (userRole !== 'admin') {
                         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
                     }
                     
                     loadAllData();
                     
-                    // توجيه الطباخ مباشرة لشاشة الطلبات
-                    if (userRole === 'kitchen') {
-                        showOrders();
-                    }
+                    if (userRole === 'kitchen') showOrders();
                 } else {
                     document.getElementById('loginScreen').classList.remove('hidden');
                     document.getElementById('mainApp').classList.add('hidden');
@@ -330,26 +346,101 @@
             });
         });
         
+        // دوال تسجيل الدخول وإنشاء الحسابات
+        window.fillDemoUser = () => {
+            const select = document.getElementById('demoUserSelect');
+            const value = select.value;
+            if (value) {
+                const [email, password] = value.split('|');
+                document.getElementById('loginEmail').value = email;
+                document.getElementById('loginPassword').value = password;
+            }
+        };
+
+        window.createAdminAccount = async () => {
+            const email = 'admin@makola.com';
+            const password = '123456';
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert('✅ تم إنشاء حساب المدير بنجاح!\n\nالإيميل: admin@makola.com\nكلمة المرور: 123456');
+                document.getElementById('loginEmail').value = email;
+                document.getElementById('loginPassword').value = password;
+            } catch (e) {
+                if (e.code === 'auth/email-already-in-use') {
+                    alert('⚠️ الحساب موجود مسبقاً. تم تعبئة البيانات جاهزة للدخول.');
+                    document.getElementById('loginEmail').value = email;
+                    document.getElementById('loginPassword').value = password;
+                } else {
+                    alert('❌ خطأ: ' + e.message);
+                }
+            }
+        };
+
+        window.createAllAccounts = async () => {
+            const accounts = [
+                { email: 'admin@makola.com', password: '123456', role: '👑 مدير' },
+                { email: 'cashier@makola.com', password: '123456', role: '💰 كاشير' },
+                { email: 'kitchen@makola.com', password: '123456', role: '🍳 طباخ' }
+            ];
+            let message = 'نتائج إنشاء الحسابات:\n\n';
+            let successCount = 0;
+            for (const acc of accounts) {
+                try {
+                    await createUserWithEmailAndPassword(auth, acc.email, acc.password);
+                    message += `✅ ${acc.role}: تم الإنشاء\n`;
+                    successCount++;
+                } catch (e) {
+                    if (e.code === 'auth/email-already-in-use') {
+                        message += `⚠️ ${acc.role}: موجود مسبقاً\n`;
+                    } else {
+                        message += `❌ ${acc.role}: ${e.message}\n`;
+                    }
+                }
+            }
+            message += `\n📊 تم بنجاح: ${successCount} من ${accounts.length}`;
+            message += `\n\n🔑 بيانات المدير:\nadmin@makola.com / 123456`;
+            alert(message);
+            document.getElementById('loginEmail').value = 'admin@makola.com';
+            document.getElementById('loginPassword').value = '123456';
+        };
+
+        window.skipLogin = () => {
+            currentUser = { email: 'guest@makola.com' };
+            userRole = 'admin';
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userRoleDisplay').innerText = 'وضع التجربة (مدير)';
+            document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            loadAllData();
+        };
+        
         window.login = async () => {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (e) {
-                alert('خطأ في البريد أو كلمة المرور');
+                alert('❌ خطأ في البريد أو كلمة المرور!\n\nتأكد من البيانات أو استخدم أزرار الإنشاء التلقائي.');
             }
         };
         
         window.logout = async () => {
-            await signOut(auth);
+            if (currentUser?.email === 'guest@makola.com') {
+                location.reload();
+            } else {
+                await signOut(auth);
+            }
         };
         
         window.addNewUser = async () => {
             const email = document.getElementById('newUserEmail').value;
             const password = document.getElementById('newUserPassword').value;
+            if (!email || !password) return alert('الرجاء إدخال البريد وكلمة المرور');
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
                 alert('✅ تم إنشاء المستخدم بنجاح');
+                document.getElementById('newUserEmail').value = '';
+                document.getElementById('newUserPassword').value = '';
             } catch (e) {
                 alert('❌ ' + e.message);
             }
@@ -360,10 +451,8 @@
             try {
                 const catSnap = await getDocs(collection(db, "categories"));
                 allCategories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                
                 const prodSnap = await getDocs(collection(db, "products"));
                 allProducts = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                
                 const orderSnap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
                 allOrders = orderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 
@@ -382,7 +471,7 @@
         function renderCategoryGrid() {
             const grid = document.getElementById('categoryGrid');
             let html = `<div onclick="filterProducts('الكل')" class="cat-card bg-gradient-to-br from-yellow-400 to-amber-600 p-2 rounded-2xl text-center font-black cursor-pointer ${selectedCat==='الكل'?'ring-4 ring-yellow-200':''}"><i class="fas fa-star"></i> الكل</div>`;
-            const colors = ['from-amber-100 to-orange-200', 'from-emerald-100 to-green-200', 'from-sky-100 to-blue-200'];
+            const colors = ['from-amber-100 to-orange-200', 'from-emerald-100 to-green-200', 'from-sky-100 to-blue-200', 'from-rose-100 to-pink-200'];
             allCategories.forEach((cat, i) => {
                 html += `<div onclick="filterProducts('${cat.id}')" class="cat-card bg-gradient-to-br ${colors[i%colors.length]} p-2 rounded-2xl text-center font-black cursor-pointer ${selectedCat===cat.id?'ring-4 ring-yellow-400':''}"><i class="fas fa-tag"></i> ${cat.name}</div>`;
             });
@@ -416,24 +505,15 @@
             if(currentCart.length===0) return alert('السلة فارغة!');
             const total = currentCart.reduce((s,i)=> s+(i.price*i.quantity), 0);
             const orderNumber = Math.floor(100 + Math.random() * 900);
-            
             try {
-                const orderRef = await addDoc(collection(db, "orders"), { 
-                    orderNumber, items: currentCart, total, status: 'جديد', createdAt: new Date() 
-                });
-                
-                // صوت تنبيه
+                const orderRef = await addDoc(collection(db, "orders"), { orderNumber, items: currentCart, total, status: 'جديد', createdAt: new Date() });
                 document.getElementById('newOrderSound').play();
-                
-                // تليجرام
                 let msg = `🔥 *طلب جديد #${orderNumber}* 🔥\n🆔 ${orderRef.id.slice(-4)}\n📋 `;
                 currentCart.forEach(i => msg += `${i.quantity}x ${i.name}\n`);
                 msg += `\n💰 *الإجمالي: ${total.toFixed(2)} دينار*`;
-                
                 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
                 const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 await fetch(proxy, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: 'Markdown' }) });
-                
                 alert(`✅ تم إنشاء الطلب رقم #${orderNumber} بنجاح!`);
                 clearCart();
                 loadAllData();
@@ -446,7 +526,6 @@
             const todayOrders = allOrders.filter(o => o.createdAt && new Date(o.createdAt.toDate()).toDateString() === today);
             const activeOrders = allOrders.filter(o => o.status === 'جديد' || o.status === 'جاهز');
             const completedOrders = allOrders.filter(o => o.status === 'تم التسليم').slice(0, 10);
-            
             const totalSales = todayOrders.reduce((s, o) => s + o.total, 0);
             document.getElementById('todayOrdersCount').innerText = todayOrders.length;
             document.getElementById('todaySales').innerText = totalSales.toFixed(2);
@@ -492,42 +571,17 @@
             loadAllData();
         };
 
-        // ========== طباعة فاتورة PDF ==========
         window.printOrderInvoice = (orderId) => {
             const order = allOrders.find(o => o.id === orderId);
             if (!order) return;
-            
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
-                <html dir="rtl">
-                    <head><title>فاتورة #${order.orderNumber}</title>
-                    <style>
-                        body { font-family: 'Cairo', sans-serif; text-align: center; padding: 20px; }
-                        .header { border-bottom: 2px dashed #d97706; padding-bottom: 10px; margin-bottom: 20px; }
-                        .item { display: flex; justify-content: space-between; margin: 10px 0; }
-                        .total { border-top: 2px dashed #d97706; margin-top: 20px; padding-top: 20px; font-size: 1.5em; font-weight: bold; }
-                        .footer { margin-top: 30px; color: #666; font-size: 0.8em; }
-                    </style>
-                    </head>
-                    <body>
-                        <div class="header">
-                            <h1>🧉 ماكولا سويعه</h1>
-                            <p>نكهة بغداد • جودة الملوك</p>
-                            <p>فاتورة رقم #${order.orderNumber}</p>
-                            <p>${new Date(order.createdAt.toDate()).toLocaleString('ar-IQ')}</p>
-                        </div>
-                        <div>
-                            ${order.items.map(i => `<div class="item"><span>${i.quantity}x ${i.name}</span><span>${(i.price * i.quantity).toFixed(2)} د.ع</span></div>`).join('')}
-                        </div>
-                        <div class="total">
-                            <div class="item"><span>الإجمالي</span><span>${order.total.toFixed(2)} د.ع</span></div>
-                        </div>
-                        <div class="footer">
-                            <p>شكراً لزيارتكم • نتمنى لكم يوماً سعيداً</p>
-                            <p>📞 0770 000 0000</p>
-                        </div>
-                    </body>
-                </html>
+                <html dir="rtl"><head><title>فاتورة #${order.orderNumber}</title>
+                <style>body{font-family:'Cairo',sans-serif;text-align:center;padding:20px}.header{border-bottom:2px dashed #d97706;padding-bottom:10px;margin-bottom:20px}.item{display:flex;justify-content:space-between;margin:10px 0}.total{border-top:2px dashed #d97706;margin-top:20px;padding-top:20px;font-size:1.5em;font-weight:bold}.footer{margin-top:30px;color:#666;font-size:.8em}</style>
+                </head><body><div class="header"><h1>🧉 ماكولا سويعه</h1><p>نكهة بغداد • جودة الملوك</p><p>فاتورة رقم #${order.orderNumber}</p><p>${new Date(order.createdAt.toDate()).toLocaleString('ar-IQ')}</p></div>
+                <div>${order.items.map(i => `<div class="item"><span>${i.quantity}x ${i.name}</span><span>${(i.price * i.quantity).toFixed(2)} د.ع</span></div>`).join('')}</div>
+                <div class="total"><div class="item"><span>الإجمالي</span><span>${order.total.toFixed(2)} د.ع</span></div></div>
+                <div class="footer"><p>شكراً لزيارتكم • نتمنى لكم يوماً سعيداً</p><p>📞 0770 000 0000</p></div></body></html>
             `);
             printWindow.document.close();
             printWindow.print();
@@ -541,40 +595,28 @@
             document.getElementById('totalProductsAll').innerText = allProducts.length;
             document.getElementById('totalCategoriesAll').innerText = allCategories.length;
             
-            // رسم بياني للمنتجات الأكثر مبيعاً
             const productSales = {};
             allOrders.forEach(o => o.items.forEach(i => productSales[i.name] = (productSales[i.name] || 0) + i.quantity));
             const topProducts = Object.entries(productSales).sort((a,b) => b[1] - a[1]).slice(0, 5);
             
-            new Chart(document.getElementById('topProductsChart'), {
+            if (topProductsChartInstance) topProductsChartInstance.destroy();
+            topProductsChartInstance = new Chart(document.getElementById('topProductsChart'), {
                 type: 'doughnut',
                 data: { labels: topProducts.map(p => p[0]), datasets: [{ data: topProducts.map(p => p[1]), backgroundColor: ['#fbbf24', '#d97706', '#f59e0b', '#b45309', '#eab308'] }] }
             });
             
-            // رسم بياني للمبيعات الأسبوعية
-            const last7Days = [...Array(7)].map((_, i) => {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                return d.toISOString().split('T')[0];
-            }).reverse();
+            const last7Days = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().split('T')[0]; }).reverse();
+            const dailySales = last7Days.map(day => allOrders.filter(o => o.createdAt && new Date(o.createdAt.toDate()).toISOString().split('T')[0] === day).reduce((s, o) => s + o.total, 0));
             
-            const dailySales = last7Days.map(day => {
-                return allOrders.filter(o => o.createdAt && new Date(o.createdAt.toDate()).toISOString().split('T')[0] === day).reduce((s, o) => s + o.total, 0);
-            });
-            
-            new Chart(document.getElementById('weeklySalesChart'), {
+            if (weeklySalesChartInstance) weeklySalesChartInstance.destroy();
+            weeklySalesChartInstance = new Chart(document.getElementById('weeklySalesChart'), {
                 type: 'line',
                 data: { labels: last7Days.map(d => new Date(d).toLocaleDateString('ar-IQ', {weekday: 'short'})), datasets: [{ label: 'المبيعات (د.ع)', data: dailySales, borderColor: '#fbbf24', tension: 0.4 }] }
             });
         }
 
         window.exportToExcel = () => {
-            const data = allOrders.map(o => ({
-                'رقم الطلب': o.orderNumber,
-                'التاريخ': o.createdAt ? new Date(o.createdAt.toDate()).toLocaleString('ar-IQ') : '',
-                'المنتجات': o.items.map(i => `${i.quantity}x ${i.name}`).join(', '),
-                'الإجمالي': o.total,
-                'الحالة': o.status
-            }));
+            const data = allOrders.map(o => ({ 'رقم الطلب': o.orderNumber, 'التاريخ': o.createdAt ? new Date(o.createdAt.toDate()).toLocaleString('ar-IQ') : '', 'المنتجات': o.items.map(i => `${i.quantity}x ${i.name}`).join(', '), 'الإجمالي': o.total, 'الحالة': o.status }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "الطلبات");
@@ -594,7 +636,6 @@
         async function loadAdminData() {
             document.getElementById('newProdCat').innerHTML = allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             document.getElementById('adminCatList').innerHTML = allCategories.map(c => `<li class="flex justify-between bg-white/50 p-2 rounded-xl"><span>📁 ${c.name}</span><button onclick="deleteCategory('${c.id}')" class="text-red-500">🗑️</button></li>`).join('');
-            
             const catMap = Object.fromEntries(allCategories.map(c => [c.id, c.name]));
             document.getElementById('adminProdList').innerHTML = allProducts.map(p => `<tr><td class="p-2">${p.name}</td><td class="p-2">${catMap[p.category_id]||''}</td><td class="p-2">${p.price} د.ع</td><td class="p-2"><button onclick="deleteProduct('${p.id}')" class="text-red-500">🗑️</button></td></tr>`).join('');
         }
@@ -602,8 +643,8 @@
         window.addCategory = async () => { const n = document.getElementById('newCatName').value; if(n) { await addDoc(collection(db, "categories"), { name: n }); document.getElementById('newCatName').value = ''; loadAllData(); } };
         window.deleteCategory = async (id) => { await deleteDoc(doc(db, "categories", id)); loadAllData(); };
         window.addProduct = async () => {
-            const n = document.getElementById('newProdName').value, p = +document.getElementById('newProdPrice').value, c = document.getElementById('newProdCat').value;
-            if(n && p && c) { await addDoc(collection(db, "products"), { name: n, price: p, category_id: c }); document.getElementById('newProdName').value = ''; document.getElementById('newProdPrice').value = ''; loadAllData(); }
+            const n = document.getElementById('newProdName').value, p = +document.getElementById('newProdPrice').value, c = document.getElementById('newProdCat').value, d = document.getElementById('newProdDesc').value;
+            if(n && p && c) { await addDoc(collection(db, "products"), { name: n, price: p, category_id: c, description: d }); document.getElementById('newProdName').value = ''; document.getElementById('newProdPrice').value = ''; document.getElementById('newProdDesc').value = ''; loadAllData(); }
         };
         window.deleteProduct = async (id) => { await deleteDoc(doc(db, "products", id)); loadAllData(); };
 
@@ -617,16 +658,10 @@
         function setActiveTab(activeId) {
             ['btnCashier', 'btnOrders', 'btnReports', 'btnAdmin'].forEach(id => {
                 const btn = document.getElementById(id);
-                if (btn) {
-                    btn.classList.remove('tab-active', 'gold-gradient');
-                    btn.classList.add('bg-gray-700', 'text-white');
-                }
+                if (btn) { btn.classList.remove('tab-active', 'gold-gradient'); btn.classList.add('bg-gray-700', 'text-white'); }
             });
             const activeBtn = document.getElementById(activeId);
-            if (activeBtn) {
-                activeBtn.classList.add('tab-active', 'gold-gradient');
-                activeBtn.classList.remove('bg-gray-700', 'text-white');
-            }
+            if (activeBtn) { activeBtn.classList.add('tab-active', 'gold-gradient'); activeBtn.classList.remove('bg-gray-700', 'text-white'); }
         }
     </script>
 </body>
