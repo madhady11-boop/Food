@@ -31,9 +31,8 @@
         .status-badge { padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .status-new { background: #fef3c7; color: #92400e; }
         .status-ready { background: #d1fae5; color: #065f46; }
+        .status-delivery { background: #dbeafe; color: #1e40af; }
         .login-container { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,215,0,0.3); }
-        
-        /* شاشة الطباخ */
         .kitchen-screen { background: #1a1a2e; min-height: 100vh; }
         .kitchen-order-card { background: linear-gradient(135deg, #2d2d4e, #1e1e3a); border-left: 5px solid #fbbf24; }
     </style>
@@ -54,7 +53,7 @@
         const TELEGRAM_CHAT_ID = '909090929';
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -70,6 +69,7 @@
         window.doc = doc;
         window.query = query;
         window.orderBy = orderBy;
+        window.where = where;
         
         console.log("🐰 مأكولات الأرنب الضاحك - جاهز");
         window.dispatchEvent(new Event('firebaseReady'));
@@ -123,9 +123,11 @@
             <div class="flex gap-2">
                 <button onclick="showCashier()" id="btnCashier" class="px-4 py-2 rounded-xl font-bold tab-active"><i class="fas fa-cash-register ml-1"></i> البيع</button>
                 <button onclick="showOrders()" id="btnOrders" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-clipboard-list ml-1"></i> الطلبات</button>
-                <button onclick="showKitchenScreen()" id="btnKitchen" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-utensils ml-1"></i> شاشة المطبخ</button>
+                <button onclick="showKitchenScreen()" id="btnKitchen" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-utensils ml-1"></i> المطبخ</button>
                 <button onclick="showReports()" id="btnReports" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white admin-only"><i class="fas fa-chart-bar ml-1"></i> التقارير</button>
+                <button onclick="showCoupons()" id="btnCoupons" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white admin-only"><i class="fas fa-ticket-alt ml-1"></i> الكوبونات</button>
                 <button onclick="showAdmin()" id="btnAdmin" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white admin-only"><i class="fas fa-cog ml-1"></i> الإدارة</button>
+                <button onclick="manualBackup()" class="px-4 py-2 rounded-xl font-bold bg-green-600/50 hover:bg-green-700 text-white admin-only"><i class="fas fa-download ml-1"></i> نسخ احتياطي</button>
                 <button onclick="logout()" class="px-4 py-2 rounded-xl font-bold bg-red-600/50 hover:bg-red-700 text-white"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </header>
@@ -133,18 +135,32 @@
         <!-- واجهة الكاشير -->
         <main id="cashierView" class="flex-1 flex flex-col md:flex-row gap-3 overflow-hidden">
             <div class="flex-[3] flex flex-col gap-3 overflow-hidden">
-                <!-- الوجبات المجمعة ونسخ آخر طلب -->
                 <div class="glass-card-light rounded-3xl p-4">
-                    <div class="flex gap-2 mb-3">
-                        <button onclick="repeatLastOrder()" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1">
-                            <i class="fas fa-copy"></i> نسخ آخر طلب
-                        </button>
-                        <button onclick="showCombos()" class="gold-gradient text-gray-900 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1">
-                            <i class="fas fa-gift"></i> الوجبات المجمعة
-                        </button>
+                    <div class="flex gap-2 mb-3 flex-wrap">
+                        <button onclick="repeatLastOrder()" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-bold text-sm"><i class="fas fa-copy"></i> نسخ آخر طلب</button>
+                        <button onclick="showCombos()" class="gold-gradient text-gray-900 px-4 py-2 rounded-xl font-bold text-sm"><i class="fas fa-gift"></i> الوجبات المجمعة</button>
+                        <button onclick="toggleDelivery()" id="deliveryToggleBtn" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-sm"><i class="fas fa-motorcycle"></i> توصيل</button>
                     </div>
                     
-                    <!-- قائمة الوجبات المجمعة (مخفية افتراضياً) -->
+                    <!-- معلومات التوصيل (مخفية افتراضياً) -->
+                    <div id="deliveryInfo" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 mb-3 p-3 bg-blue-50 rounded-xl">
+                        <input type="text" id="customerName" placeholder="اسم الزبون" class="bg-white rounded-lg p-2 text-sm">
+                        <input type="tel" id="customerPhone" placeholder="رقم الهاتف" class="bg-white rounded-lg p-2 text-sm">
+                        <input type="text" id="customerAddress" placeholder="العنوان" class="bg-white rounded-lg p-2 text-sm">
+                        <div class="col-span-full">
+                            <label class="flex items-center gap-2"><input type="checkbox" id="addDeliveryFee"> إضافة أجور توصيل (2000 د.ع)</label>
+                        </div>
+                    </div>
+                    
+                    <!-- قائمة الكوبونات -->
+                    <div id="couponPanel" class="hidden mb-3">
+                        <div class="flex gap-2">
+                            <input type="text" id="couponCode" placeholder="كود الخصم" class="flex-1 bg-white rounded-lg p-2 text-sm">
+                            <button onclick="applyCoupon()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm">تطبيق</button>
+                        </div>
+                        <p id="couponMessage" class="text-xs mt-1"></p>
+                    </div>
+                    
                     <div id="combosPanel" class="hidden grid grid-cols-2 md:grid-cols-3 gap-2 mb-3"></div>
                     
                     <div class="relative">
@@ -167,9 +183,17 @@
                     <span class="bg-yellow-500/20 px-3 py-1 rounded-full text-sm"><span id="cartCount">0</span> مواد</span>
                 </div>
                 <div id="cartItems" class="flex-1 overflow-y-auto my-3 space-y-2"></div>
+                
+                <!-- ملخص الخصم والتوصيل -->
+                <div id="cartSummary" class="text-sm space-y-1 border-t border-white/20 pt-2 mb-2 hidden">
+                    <div class="flex justify-between"><span>المجموع الفرعي:</span><span id="subtotalAmount">0</span> د.ع</div>
+                    <div class="flex justify-between text-green-400"><span>الخصم:</span><span id="discountAmount">0</span> د.ع</div>
+                    <div class="flex justify-between text-blue-400"><span>التوصيل:</span><span id="deliveryFeeAmount">0</span> د.ع</div>
+                </div>
+                
                 <div class="border-t border-white/20 pt-3 space-y-3">
                     <div class="flex justify-between items-center text-xl font-black">
-                        <span>المجموع</span>
+                        <span>المجموع النهائي</span>
                         <span class="gold-text text-3xl"><span id="cartTotal">0</span> <small class="text-sm text-gray-300">د.ع</small></span>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
@@ -183,10 +207,11 @@
         <!-- شاشة الطلبات -->
         <main id="ordersView" class="flex-1 overflow-y-auto hidden">
             <div class="max-w-7xl mx-auto space-y-4">
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-4 gap-3">
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">طلبات اليوم</p><p class="text-3xl font-black" id="todayOrdersCount">0</p></div>
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">إجمالي المبيعات</p><p class="text-3xl font-black gold-text"><span id="todaySales">0</span> د.ع</p></div>
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">متوسط الطلب</p><p class="text-3xl font-black"><span id="avgOrder">0</span> د.ع</p></div>
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">طلبات التوصيل</p><p class="text-3xl font-black text-blue-600" id="deliveryOrdersCount">0</p></div>
                 </div>
                 
                 <div class="glass-card-light rounded-3xl p-5">
@@ -201,15 +226,43 @@
             </div>
         </main>
 
-        <!-- شاشة المطبخ المبسطة (جديدة) -->
+        <!-- شاشة المطبخ -->
         <main id="kitchenView" class="flex-1 overflow-y-auto hidden">
             <div class="kitchen-screen rounded-3xl p-6">
                 <h2 class="text-3xl font-black gold-text mb-6 text-center">👨‍🍳 شاشة المطبخ - الطلبات الجديدة</h2>
-                <div id="kitchenOrdersList" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <p class="text-gray-400 text-center col-span-full py-10">جاري تحميل الطلبات...</p>
+                <div id="kitchenOrdersList" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+                <div class="text-center mt-6 text-gray-400 text-sm"><i class="fas fa-sync-alt fa-spin ml-1"></i> تحديث تلقائي كل 10 ثواني</div>
+            </div>
+        </main>
+
+        <!-- شاشة الكوبونات -->
+        <main id="couponsView" class="flex-1 overflow-y-auto hidden">
+            <div class="max-w-4xl mx-auto space-y-4">
+                <div class="glass-card-light rounded-3xl p-5">
+                    <h3 class="text-xl font-black mb-4"><i class="fas fa-ticket-alt ml-2 text-purple-600"></i> إدارة الكوبونات</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                        <input type="text" id="newCouponCode" placeholder="كود الكوبون" class="bg-white/70 rounded-xl p-3">
+                        <select id="newCouponType" class="bg-white/70 rounded-xl p-3">
+                            <option value="percent">نسبة %</option>
+                            <option value="fixed">مبلغ ثابت</option>
+                        </select>
+                        <input type="number" id="newCouponValue" placeholder="قيمة الخصم" class="bg-white/70 rounded-xl p-3">
+                        <button onclick="createCoupon()" class="bg-purple-600 text-white py-3 rounded-xl font-black">إنشاء كوبون</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                        <input type="date" id="couponExpiry" class="bg-white/70 rounded-xl p-3">
+                        <input type="number" id="couponMaxUses" placeholder="الحد الأقصى للاستخدام (اختياري)" class="bg-white/70 rounded-xl p-3">
+                    </div>
+                    <div id="couponsList" class="space-y-2"></div>
                 </div>
-                <div class="text-center mt-6 text-gray-400 text-sm">
-                    <i class="fas fa-sync-alt fa-spin ml-1"></i> تحديث تلقائي كل 10 ثواني
+                
+                <div class="glass-card-light rounded-3xl p-5">
+                    <h3 class="text-xl font-black mb-4"><i class="fas fa-chart-line ml-2 text-green-600"></i> إحصائيات الكوبونات</h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-white/50 rounded-xl p-3"><p class="text-gray-500">عدد الكوبونات</p><p class="text-2xl font-black" id="totalCoupons">0</p></div>
+                        <div class="bg-white/50 rounded-xl p-3"><p class="text-gray-500">عدد مرات الاستخدام</p><p class="text-2xl font-black" id="totalCouponUses">0</p></div>
+                        <div class="bg-white/50 rounded-xl p-3"><p class="text-gray-500">إجمالي الخصومات</p><p class="text-2xl font-black"><span id="totalDiscounts">0</span> د.ع</p></div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -218,15 +271,16 @@
         <main id="reportsView" class="flex-1 overflow-y-auto hidden">
             <div class="max-w-7xl mx-auto space-y-4">
                 <div class="flex gap-3 justify-end">
-                    <button onclick="exportToExcel()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-file-excel ml-2"></i> تصدير Excel</button>
-                    <button onclick="exportToPDF()" class="bg-red-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-file-pdf ml-2"></i> تصدير PDF</button>
+                    <button onclick="exportToExcel()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-file-excel ml-2"></i> Excel</button>
+                    <button onclick="exportToPDF()" class="bg-red-600 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-file-pdf ml-2"></i> PDF</button>
                 </div>
                 
-                <div class="grid grid-cols-4 gap-3">
+                <div class="grid grid-cols-5 gap-3">
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">إجمالي المبيعات</p><p class="text-2xl font-black"><span id="totalSalesAll">0</span> د.ع</p></div>
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">عدد الطلبات</p><p class="text-2xl font-black" id="totalOrdersAll">0</p></div>
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">عدد المنتجات</p><p class="text-2xl font-black" id="totalProductsAll">0</p></div>
                     <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">عدد الأصناف</p><p class="text-2xl font-black" id="totalCategoriesAll">0</p></div>
+                    <div class="glass-card-light rounded-2xl p-4"><p class="text-gray-500">طلبات التوصيل</p><p class="text-2xl font-black text-blue-600" id="totalDeliveryOrders">0</p></div>
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -245,7 +299,6 @@
         <!-- لوحة الإدارة -->
         <main id="adminView" class="flex-1 overflow-y-auto hidden">
             <div class="max-w-7xl mx-auto space-y-4">
-                <!-- الوجبات المجمعة (إدارة) -->
                 <div class="glass-card-light rounded-3xl p-5">
                     <h3 class="text-xl font-black mb-4"><i class="fas fa-gift ml-2 text-purple-600"></i> إدارة الوجبات المجمعة</h3>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -289,7 +342,67 @@
         let topProductsChartInstance = null, weeklySalesChartInstance = null;
         let lastOrder = null;
         let combos = [];
+        let coupons = [];
         let kitchenInterval = null;
+        let isDelivery = false;
+        let currentDiscount = { type: null, value: 0, code: null };
+        let backupInterval = null;
+        
+        // ================= نسخ احتياطي تلقائي =================
+        function scheduleAutoBackup() {
+            // حساب الوقت المتبقي للساعة 12 منتصف الليل
+            const now = new Date();
+            const night = new Date(now);
+            night.setHours(24, 0, 0, 0);
+            const msUntilMidnight = night - now;
+            
+            // أول نسخة بعد منتصف الليل
+            setTimeout(() => {
+                performBackup();
+                // ثم كل 24 ساعة
+                backupInterval = setInterval(performBackup, 24 * 60 * 60 * 1000);
+            }, msUntilMidnight);
+            
+            console.log(`🕐 تم جدولة النسخ الاحتياطي اليومي الساعة 12 منتصف الليل`);
+        }
+        
+        async function performBackup() {
+            try {
+                const backup = {
+                    timestamp: new Date().toISOString(),
+                    categories: allCategories,
+                    products: allProducts,
+                    orders: allOrders,
+                    combos: combos,
+                    coupons: coupons
+                };
+                
+                // حفظ النسخة في localStorage
+                const backups = JSON.parse(localStorage.getItem('arnob_backups') || '[]');
+                backups.push(backup);
+                // الاحتفاظ بآخر 7 نسخ فقط
+                if (backups.length > 7) backups.shift();
+                localStorage.setItem('arnob_backups', JSON.stringify(backups));
+                
+                // أيضاً تحميل نسخة كملف JSON تلقائي
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `arnob_backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                console.log('✅ تم النسخ الاحتياطي التلقائي بنجاح');
+            } catch (e) {
+                console.error('❌ فشل النسخ الاحتياطي:', e);
+            }
+        }
+        
+        window.manualBackup = () => {
+            performBackup();
+            alert('✅ تم إنشاء نسخة احتياطية وحفظها على جهازك');
+        };
         
         // ================= تسجيل الدخول =================
         window.hardcodedLogin = () => {
@@ -326,13 +439,134 @@
             
             loadAllData();
             loadCombos();
+            loadCoupons();
+            scheduleAutoBackup();
             
             if (userRole === 'kitchen') {
                 showKitchenScreen();
             }
         };
         
-        window.logout = () => location.reload();
+        window.logout = () => {
+            if (kitchenInterval) clearInterval(kitchenInterval);
+            if (backupInterval) clearInterval(backupInterval);
+            location.reload();
+        };
+
+        // ================= التوصيل =================
+        window.toggleDelivery = () => {
+            isDelivery = !isDelivery;
+            const info = document.getElementById('deliveryInfo');
+            const btn = document.getElementById('deliveryToggleBtn');
+            
+            if (isDelivery) {
+                info.classList.remove('hidden');
+                btn.classList.remove('bg-blue-600');
+                btn.classList.add('bg-green-600');
+                btn.innerHTML = '<i class="fas fa-check"></i> توصيل مفعل';
+                document.getElementById('couponPanel').classList.remove('hidden');
+            } else {
+                info.classList.add('hidden');
+                btn.classList.remove('bg-green-600');
+                btn.classList.add('bg-blue-600');
+                btn.innerHTML = '<i class="fas fa-motorcycle"></i> توصيل';
+                document.getElementById('couponPanel').classList.add('hidden');
+            }
+            renderCart();
+        };
+        
+        // ================= الكوبونات =================
+        async function loadCoupons() {
+            const snap = await getDocs(collection(db, "coupons"));
+            coupons = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderCouponsList();
+            updateCouponStats();
+        }
+        
+        window.createCoupon = async () => {
+            const code = document.getElementById('newCouponCode').value.toUpperCase();
+            const type = document.getElementById('newCouponType').value;
+            const value = parseFloat(document.getElementById('newCouponValue').value);
+            const expiry = document.getElementById('couponExpiry').value;
+            const maxUses = parseInt(document.getElementById('couponMaxUses').value) || null;
+            
+            if (!code || !value) return alert('الرجاء إدخال الكود والقيمة');
+            
+            await addDoc(collection(db, "coupons"), {
+                code, type, value, expiry, maxUses, usedCount: 0, active: true
+            });
+            
+            document.getElementById('newCouponCode').value = '';
+            document.getElementById('newCouponValue').value = '';
+            loadCoupons();
+        };
+        
+        window.applyCoupon = () => {
+            const code = document.getElementById('couponCode').value.toUpperCase();
+            const coupon = coupons.find(c => c.code === code && c.active);
+            
+            if (!coupon) {
+                document.getElementById('couponMessage').innerHTML = '<span class="text-red-600">❌ كوبون غير صالح</span>';
+                return;
+            }
+            
+            if (coupon.expiry && new Date(coupon.expiry) < new Date()) {
+                document.getElementById('couponMessage').innerHTML = '<span class="text-red-600">❌ الكوبون منتهي الصلاحية</span>';
+                return;
+            }
+            
+            if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
+                document.getElementById('couponMessage').innerHTML = '<span class="text-red-600">❌ تم استخدام الكوبون الحد الأقصى</span>';
+                return;
+            }
+            
+            currentDiscount = { type: coupon.type, value: coupon.value, code: coupon.code, id: coupon.id };
+            
+            let msg = `✅ تم تطبيق الخصم: `;
+            if (coupon.type === 'percent') msg += `${coupon.value}%`;
+            else msg += `${coupon.value} د.ع`;
+            
+            document.getElementById('couponMessage').innerHTML = `<span class="text-green-600">${msg}</span>`;
+            renderCart();
+        };
+        
+        function renderCouponsList() {
+            const list = document.getElementById('couponsList');
+            if (coupons.length === 0) {
+                list.innerHTML = '<p class="text-gray-400">ماكو كوبونات</p>';
+                return;
+            }
+            list.innerHTML = coupons.map(c => `
+                <div class="flex justify-between items-center bg-white/50 p-3 rounded-xl">
+                    <div>
+                        <span class="font-black text-lg">${c.code}</span>
+                        <span class="mr-3 text-sm">${c.type === 'percent' ? c.value + '%' : c.value + ' د.ع'}</span>
+                        <span class="text-xs text-gray-500 mr-3">استخدم: ${c.usedCount || 0}${c.maxUses ? '/' + c.maxUses : ''}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="toggleCouponStatus('${c.id}')" class="text-sm ${c.active ? 'text-green-600' : 'text-gray-400'}">${c.active ? '✅' : '⛔'}</button>
+                        <button onclick="deleteCoupon('${c.id}')" class="text-red-500">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        window.toggleCouponStatus = async (id) => {
+            const coupon = coupons.find(c => c.id === id);
+            await updateDoc(doc(db, "coupons", id), { active: !coupon.active });
+            loadCoupons();
+        };
+        
+        window.deleteCoupon = async (id) => {
+            await deleteDoc(doc(db, "coupons", id));
+            loadCoupons();
+        };
+        
+        function updateCouponStats() {
+            document.getElementById('totalCoupons').innerText = coupons.length;
+            const totalUses = coupons.reduce((s, c) => s + (c.usedCount || 0), 0);
+            document.getElementById('totalCouponUses').innerText = totalUses;
+        };
 
         // ================= الوجبات المجمعة =================
         async function loadCombos() {
@@ -345,7 +579,7 @@
         function renderCombosPanel() {
             const panel = document.getElementById('combosPanel');
             if (combos.length === 0) {
-                panel.innerHTML = '<p class="text-gray-400 text-center col-span-full py-2">ماكو وجبات مجمعة. أضف من لوحة الإدارة.</p>';
+                panel.innerHTML = '<p class="text-gray-400 text-center col-span-full py-2">ماكو وجبات مجمعة</p>';
                 return;
             }
             panel.innerHTML = combos.map(c => `
@@ -359,8 +593,7 @@
         }
         
         window.showCombos = () => {
-            const panel = document.getElementById('combosPanel');
-            panel.classList.toggle('hidden');
+            document.getElementById('combosPanel').classList.toggle('hidden');
         };
         
         window.addComboToCart = (comboId) => {
@@ -460,6 +693,7 @@
                         <span class="text-3xl font-black gold-text">#${o.orderNumber || o.id.slice(-3)}</span>
                         <span class="bg-yellow-500/30 px-3 py-1 rounded-full text-sm">${new Date(o.createdAt.toDate()).toLocaleTimeString('ar-IQ')}</span>
                     </div>
+                    ${o.isDelivery ? '<div class="bg-blue-500/30 text-blue-200 px-3 py-1 rounded-full text-sm mb-3 inline-block"><i class="fas fa-motorcycle ml-1"></i> توصيل</div>' : ''}
                     <div class="space-y-2 text-lg">
                         ${o.items.map(i => `<div class="flex justify-between"><span>${i.quantity}x ${i.name}</span></div>`).join('')}
                     </div>
@@ -478,7 +712,6 @@
             setActiveTab('btnKitchen');
             renderKitchenScreen();
             
-            // تحديث تلقائي كل 10 ثواني
             if (kitchenInterval) clearInterval(kitchenInterval);
             kitchenInterval = setInterval(() => {
                 loadAllData().then(() => renderKitchenScreen());
@@ -505,6 +738,7 @@
                 if (!document.getElementById('ordersView').classList.contains('hidden')) renderOrdersView();
                 if (!document.getElementById('kitchenView').classList.contains('hidden')) renderKitchenScreen();
                 if (!document.getElementById('reportsView').classList.contains('hidden')) renderReportsView();
+                if (!document.getElementById('couponsView').classList.contains('hidden')) { updateCouponStats(); }
                 if (!document.getElementById('adminView').classList.contains('hidden')) {
                     loadAdminData();
                     document.getElementById('comboProducts').innerHTML = allProducts.map(p => `<option value="${p.id}">${p.name} (${p.price} د.ع)</option>`).join('');
@@ -535,32 +769,121 @@
         window.addToCart = (id) => { let p = allProducts.find(x=>x.id===id); let e = currentCart.find(i=>i.id===id); e ? e.quantity++ : currentCart.push({id:p.id, name:p.name, price:p.price, quantity:1}); renderCart(); };
         window.updateQuantity = (id, ch) => { let i = currentCart.find(x=>x.id===id); if(i) { i.quantity += ch; if(i.quantity<=0) currentCart = currentCart.filter(x=>x.id!==id); } renderCart(); };
 
-        function renderCart() {
-            let total=0, html=''; 
-            currentCart.forEach(i=>{ total+=i.price*i.quantity; html+=`<div class="flex justify-between items-center bg-white/10 p-3 rounded-2xl"><div><span class="font-bold">${i.name}</span><span class="text-xs block">${i.price} د.ع</span></div><div class="flex items-center gap-2"><button onclick="updateQuantity('${i.id}',-1)" class="bg-red-500/80 w-7 h-7 rounded-full">➖</button><span class="w-6 text-center">${i.quantity}</span><button onclick="updateQuantity('${i.id}',1)" class="bg-green-500/80 w-7 h-7 rounded-full">➕</button></div></div>`; });
-            document.getElementById('cartItems').innerHTML = html || '<p class="text-center text-gray-300 py-5">السلة فارغة</p>';
-            document.getElementById('cartTotal').innerText = total.toFixed(2);
-            document.getElementById('cartCount').innerText = currentCart.reduce((s,i)=> s+i.quantity, 0);
+        function calculateTotal() {
+            let subtotal = currentCart.reduce((s, i) => s + (i.price * i.quantity), 0);
+            let discount = 0;
+            
+            if (currentDiscount.type) {
+                if (currentDiscount.type === 'percent') {
+                    discount = subtotal * (currentDiscount.value / 100);
+                } else {
+                    discount = currentDiscount.value;
+                }
+            }
+            
+            let deliveryFee = 0;
+            if (isDelivery && document.getElementById('addDeliveryFee')?.checked) {
+                deliveryFee = 2000;
+            }
+            
+            const total = Math.max(0, subtotal - discount + deliveryFee);
+            return { subtotal, discount, deliveryFee, total };
         }
 
-        window.clearCart = () => { currentCart = []; renderCart(); };
+        function renderCart() {
+            let html = ''; 
+            currentCart.forEach(i => { 
+                html += `<div class="flex justify-between items-center bg-white/10 p-3 rounded-2xl"><div><span class="font-bold">${i.name}</span><span class="text-xs block">${i.price} د.ع</span></div><div class="flex items-center gap-2"><button onclick="updateQuantity('${i.id}',-1)" class="bg-red-500/80 w-7 h-7 rounded-full">➖</button><span class="w-6 text-center">${i.quantity}</span><button onclick="updateQuantity('${i.id}',1)" class="bg-green-500/80 w-7 h-7 rounded-full">➕</button></div></div>`; 
+            });
+            document.getElementById('cartItems').innerHTML = html || '<p class="text-center text-gray-300 py-5">السلة فارغة</p>';
+            
+            const { subtotal, discount, deliveryFee, total } = calculateTotal();
+            
+            document.getElementById('cartTotal').innerText = total.toFixed(2);
+            document.getElementById('cartCount').innerText = currentCart.reduce((s,i)=> s+i.quantity, 0);
+            
+            const summaryDiv = document.getElementById('cartSummary');
+            if (discount > 0 || deliveryFee > 0) {
+                summaryDiv.classList.remove('hidden');
+                document.getElementById('subtotalAmount').innerText = subtotal.toFixed(2);
+                document.getElementById('discountAmount').innerText = discount.toFixed(2);
+                document.getElementById('deliveryFeeAmount').innerText = deliveryFee.toFixed(2);
+            } else {
+                summaryDiv.classList.add('hidden');
+            }
+        }
+
+        window.clearCart = () => { 
+            currentCart = []; 
+            currentDiscount = { type: null, value: 0, code: null };
+            isDelivery = false;
+            document.getElementById('deliveryInfo').classList.add('hidden');
+            document.getElementById('couponPanel').classList.add('hidden');
+            document.getElementById('deliveryToggleBtn').classList.remove('bg-green-600');
+            document.getElementById('deliveryToggleBtn').classList.add('bg-blue-600');
+            document.getElementById('deliveryToggleBtn').innerHTML = '<i class="fas fa-motorcycle"></i> توصيل';
+            renderCart(); 
+        };
 
         window.submitOrder = async function() {
-            if(currentCart.length===0) return alert('السلة فارغة!');
-            const total = currentCart.reduce((s,i)=> s+(i.price*i.quantity), 0);
+            if(currentCart.length === 0) return alert('السلة فارغة!');
+            
+            const { total, discount, deliveryFee } = calculateTotal();
             const orderNumber = Math.floor(100 + Math.random() * 900);
+            
+            const customerName = document.getElementById('customerName')?.value || '';
+            const customerPhone = document.getElementById('customerPhone')?.value || '';
+            const customerAddress = document.getElementById('customerAddress')?.value || '';
+            
+            if (isDelivery && (!customerName || !customerPhone || !customerAddress)) {
+                return alert('الرجاء إدخال اسم الزبون ورقم الهاتف والعنوان للتوصيل');
+            }
+            
             try {
-                const orderRef = await addDoc(collection(db, "orders"), { orderNumber, items: currentCart, total, status: 'جديد', createdAt: new Date() });
+                const orderData = {
+                    orderNumber,
+                    items: currentCart,
+                    subtotal: calculateTotal().subtotal,
+                    discount: discount,
+                    deliveryFee: deliveryFee,
+                    total,
+                    status: 'جديد',
+                    isDelivery,
+                    customerName: isDelivery ? customerName : null,
+                    customerPhone: isDelivery ? customerPhone : null,
+                    customerAddress: isDelivery ? customerAddress : null,
+                    couponCode: currentDiscount.code || null,
+                    createdAt: new Date()
+                };
+                
+                const orderRef = await addDoc(collection(db, "orders"), orderData);
+                
+                // تحديث عدد استخدامات الكوبون
+                if (currentDiscount.id) {
+                    const coupon = coupons.find(c => c.id === currentDiscount.id);
+                    await updateDoc(doc(db, "coupons", currentDiscount.id), { 
+                        usedCount: (coupon.usedCount || 0) + 1 
+                    });
+                }
+                
                 document.getElementById('newOrderSound').play();
-                let msg = `🔥 *طلب جديد #${orderNumber}* 🔥\n🆔 ${orderRef.id.slice(-4)}\n📋 `;
+                
+                let msg = `🔥 *طلب جديد #${orderNumber}* 🔥\n🆔 ${orderRef.id.slice(-4)}\n`;
+                if (isDelivery) msg += `🛵 *توصيل*\n👤 ${customerName}\n📞 ${customerPhone}\n📍 ${customerAddress}\n`;
+                msg += `📋 `;
                 currentCart.forEach(i => msg += `${i.quantity}x ${i.name}\n`);
+                if (discount > 0) msg += `\n💚 *خصم: ${discount.toFixed(2)} د.ع*`;
+                if (deliveryFee > 0) msg += `\n🛵 *توصيل: ${deliveryFee} د.ع*`;
                 msg += `\n💰 *الإجمالي: ${total.toFixed(2)} دينار*`;
+                
                 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
                 const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 await fetch(proxy, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: 'Markdown' }) });
+                
                 alert(`✅ تم إنشاء الطلب رقم #${orderNumber} بنجاح!`);
                 clearCart();
                 loadAllData();
+                loadCoupons();
             } catch (e) { alert('❌ فشل الاتصال.'); }
         };
 
@@ -570,9 +893,12 @@
             const activeOrders = allOrders.filter(o => o.status === 'جديد' || o.status === 'جاهز');
             const completedOrders = allOrders.filter(o => o.status === 'تم التسليم').slice(0, 10);
             const totalSales = todayOrders.reduce((s, o) => s + o.total, 0);
+            const deliveryOrders = todayOrders.filter(o => o.isDelivery);
+            
             document.getElementById('todayOrdersCount').innerText = todayOrders.length;
             document.getElementById('todaySales').innerText = totalSales.toFixed(2);
             document.getElementById('avgOrder').innerText = todayOrders.length ? (totalSales / todayOrders.length).toFixed(2) : '0';
+            document.getElementById('deliveryOrdersCount').innerText = deliveryOrders.length;
             
             const activeDiv = document.getElementById('activeOrdersList');
             if (activeOrders.length === 0) activeDiv.innerHTML = '<p class="text-center text-gray-400 py-5">ماكو طلبات معلقة</p>';
@@ -580,9 +906,14 @@
                 activeDiv.innerHTML = activeOrders.map(o => `
                     <div class="order-card bg-white rounded-2xl p-4 shadow">
                         <div class="flex justify-between items-start">
-                            <div><span class="text-2xl font-black gold-text">#${o.orderNumber || o.id.slice(-3)}</span><span class="mr-3 status-badge status-${o.status === 'جديد' ? 'new' : 'ready'}">${o.status}</span></div>
+                            <div>
+                                <span class="text-2xl font-black gold-text">#${o.orderNumber || o.id.slice(-3)}</span>
+                                <span class="mr-3 status-badge status-${o.status === 'جديد' ? 'new' : 'ready'}">${o.status}</span>
+                                ${o.isDelivery ? '<span class="status-badge status-delivery"><i class="fas fa-motorcycle ml-1"></i> توصيل</span>' : ''}
+                            </div>
                             <span class="text-sm text-gray-500">${o.createdAt ? new Date(o.createdAt.toDate()).toLocaleTimeString('ar-IQ') : ''}</span>
                         </div>
+                        ${o.isDelivery ? `<div class="mt-2 text-sm text-blue-600">👤 ${o.customerName} | 📞 ${o.customerPhone} | 📍 ${o.customerAddress}</div>` : ''}
                         <div class="mt-2 text-sm">${o.items.map(i => `${i.quantity}x ${i.name}`).join(' • ')}</div>
                         <div class="flex justify-between items-center mt-3">
                             <span class="font-black">${o.total.toFixed(2)} د.ع</span>
@@ -601,7 +932,11 @@
             else {
                 completedDiv.innerHTML = completedOrders.map(o => `
                     <div class="bg-gray-50 rounded-xl p-3 flex justify-between items-center">
-                        <div><span class="font-black">#${o.orderNumber || o.id.slice(-3)}</span><span class="mr-3 text-xs text-gray-500">${o.createdAt ? new Date(o.createdAt.toDate()).toLocaleTimeString('ar-IQ') : ''}</span></div>
+                        <div>
+                            <span class="font-black">#${o.orderNumber || o.id.slice(-3)}</span>
+                            <span class="mr-3 text-xs text-gray-500">${o.createdAt ? new Date(o.createdAt.toDate()).toLocaleTimeString('ar-IQ') : ''}</span>
+                            ${o.isDelivery ? '<span class="text-blue-500 text-xs"><i class="fas fa-motorcycle"></i></span>' : ''}
+                        </div>
                         <span class="font-black gold-text">${o.total.toFixed(2)} د.ع</span>
                     </div>
                 `).join('');
@@ -621,8 +956,10 @@
             printWindow.document.write(`
                 <html dir="rtl"><head><title>فاتورة #${order.orderNumber}</title>
                 <style>body{font-family:'Cairo',sans-serif;text-align:center;padding:20px}.header{border-bottom:2px dashed #d97706;padding-bottom:10px;margin-bottom:20px}.item{display:flex;justify-content:space-between;margin:10px 0}.total{border-top:2px dashed #d97706;margin-top:20px;padding-top:20px;font-size:1.5em;font-weight:bold}</style>
-                </head><body><div class="header"><h1>🐰 مأكولات الأرنب الضاحك</h1><p>فاتورة رقم #${order.orderNumber}</p><p>${new Date(order.createdAt.toDate()).toLocaleString('ar-IQ')}</p></div>
+                </head><body><div class="header"><h1>🐰 مأكولات الأرنب الضاحك</h1><p>فاتورة رقم #${order.orderNumber}</p>${order.isDelivery ? `<p>👤 ${order.customerName} | 📞 ${order.customerPhone}</p><p>📍 ${order.customerAddress}</p>` : ''}<p>${new Date(order.createdAt.toDate()).toLocaleString('ar-IQ')}</p></div>
                 <div>${order.items.map(i => `<div class="item"><span>${i.quantity}x ${i.name}</span><span>${(i.price * i.quantity).toFixed(2)} د.ع</span></div>`).join('')}</div>
+                ${order.discount > 0 ? `<div class="item"><span>خصم</span><span>-${order.discount.toFixed(2)} د.ع</span></div>` : ''}
+                ${order.deliveryFee > 0 ? `<div class="item"><span>توصيل</span><span>${order.deliveryFee} د.ع</span></div>` : ''}
                 <div class="total"><div class="item"><span>الإجمالي</span><span>${order.total.toFixed(2)} د.ع</span></div></div></body></html>
             `);
             printWindow.document.close();
@@ -631,10 +968,15 @@
 
         function renderReportsView() {
             const totalSales = allOrders.reduce((s, o) => s + o.total, 0);
+            const deliveryOrders = allOrders.filter(o => o.isDelivery);
+            const totalDiscounts = allOrders.reduce((s, o) => s + (o.discount || 0), 0);
+            
             document.getElementById('totalSalesAll').innerText = totalSales.toFixed(2);
             document.getElementById('totalOrdersAll').innerText = allOrders.length;
             document.getElementById('totalProductsAll').innerText = allProducts.length;
             document.getElementById('totalCategoriesAll').innerText = allCategories.length;
+            document.getElementById('totalDeliveryOrders').innerText = deliveryOrders.length;
+            document.getElementById('totalDiscounts').innerText = totalDiscounts.toFixed(2);
             
             const productSales = {};
             allOrders.forEach(o => o.items.forEach(i => productSales[i.name] = (productSales[i.name] || 0) + i.quantity));
@@ -657,7 +999,16 @@
         }
 
         window.exportToExcel = () => {
-            const data = allOrders.map(o => ({ 'رقم الطلب': o.orderNumber, 'التاريخ': o.createdAt ? new Date(o.createdAt.toDate()).toLocaleString('ar-IQ') : '', 'المنتجات': o.items.map(i => `${i.quantity}x ${i.name}`).join(', '), 'الإجمالي': o.total, 'الحالة': o.status }));
+            const data = allOrders.map(o => ({ 
+                'رقم الطلب': o.orderNumber, 
+                'التاريخ': o.createdAt ? new Date(o.createdAt.toDate()).toLocaleString('ar-IQ') : '', 
+                'نوع الطلب': o.isDelivery ? 'توصيل' : 'محلي',
+                'الزبون': o.customerName || '-',
+                'الهاتف': o.customerPhone || '-',
+                'المنتجات': o.items.map(i => `${i.quantity}x ${i.name}`).join(', '), 
+                'الإجمالي': o.total, 
+                'الحالة': o.status 
+            }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "الطلبات");
@@ -691,15 +1042,16 @@
         window.showCashier = () => { hideAll(); document.getElementById('cashierView').classList.remove('hidden'); setActiveTab('btnCashier'); loadAllData(); };
         window.showOrders = () => { hideAll(); document.getElementById('ordersView').classList.remove('hidden'); setActiveTab('btnOrders'); loadAllData(); };
         window.showReports = () => { hideAll(); document.getElementById('reportsView').classList.remove('hidden'); setActiveTab('btnReports'); loadAllData(); };
+        window.showCoupons = () => { hideAll(); document.getElementById('couponsView').classList.remove('hidden'); setActiveTab('btnCoupons'); loadCoupons(); };
         window.showAdmin = () => { hideAll(); document.getElementById('adminView').classList.remove('hidden'); setActiveTab('btnAdmin'); loadAllData(); };
         
         function hideAll() { 
-            ['cashierView', 'ordersView', 'kitchenView', 'reportsView', 'adminView'].forEach(id => document.getElementById(id).classList.add('hidden')); 
+            ['cashierView', 'ordersView', 'kitchenView', 'reportsView', 'couponsView', 'adminView'].forEach(id => document.getElementById(id).classList.add('hidden')); 
             if (kitchenInterval) { clearInterval(kitchenInterval); kitchenInterval = null; }
         }
         
         function setActiveTab(activeId) {
-            ['btnCashier', 'btnOrders', 'btnKitchen', 'btnReports', 'btnAdmin'].forEach(id => {
+            ['btnCashier', 'btnOrders', 'btnKitchen', 'btnReports', 'btnCoupons', 'btnAdmin'].forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) { btn.classList.remove('tab-active', 'gold-gradient'); btn.classList.add('bg-gray-700', 'text-white'); }
             });
