@@ -3,57 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>⚡ ماكولات الارنب الضاحك | النظام الذهبي</title>
+    <title>🐰 مأكولات الأرنب الضاحك | النظام الذهبي</title>
     
-    <!-- Tailwind & Font Awesome & Google Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     
-    <!-- Chart.js للرسوم البيانية -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- SheetJS لتصدير Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    
-    <!-- html2canvas + jsPDF لتصدير PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         * { font-family: 'Cairo', sans-serif; }
         body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); background-attachment: fixed; }
-        
-        .glass-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
-        .glass-card-light { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.5); }
-        
-        .cat-card:active, .product-card:active { transform: scale(0.96); }
-        .product-card { transition: all 0.2s; border-radius: 24px; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3); }
-        
+        .glass-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
+        .glass-card-light { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .cat-card:active, .product-card:active, .combo-card:active { transform: scale(0.96); }
+        .product-card, .combo-card { transition: all 0.2s; border-radius: 24px; cursor: pointer; }
+        .product-card:hover, .combo-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3); }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 10px; }
-        
         .gold-gradient { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
         .gold-text { background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .tab-active { background: linear-gradient(135deg, #fbbf24, #d97706) !important; color: #1a1a2e !important; font-weight: 900; }
-        
         .status-badge { padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .status-new { background: #fef3c7; color: #92400e; }
         .status-ready { background: #d1fae5; color: #065f46; }
-        .status-done { background: #e0e7ff; color: #3730a3; }
-
-        .login-container {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,215,0,0.3);
-        }
+        .login-container { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,215,0,0.3); }
+        
+        /* شاشة الطباخ */
+        .kitchen-screen { background: #1a1a2e; min-height: 100vh; }
+        .kitchen-order-card { background: linear-gradient(135deg, #2d2d4e, #1e1e3a); border-left: 5px solid #fbbf24; }
     </style>
 </head>
 <body class="h-screen flex flex-col p-3">
 
-    <!-- ================= إعدادات Firebase (بدون Authentication) ================= -->
     <script type="module">
         const firebaseConfig = {
             apiKey: "AIzaSy5S-w-4dH0aVyz_6QbyADJpWuSetSNwTPM",
@@ -85,33 +71,22 @@
         window.query = query;
         window.orderBy = orderBy;
         
-        console.log("🔥 ماكولات الارنب الضاحك - جاهز (بدون Authentication)");
+        console.log("🐰 مأكولات الأرنب الضاحك - جاهز");
         window.dispatchEvent(new Event('firebaseReady'));
     </script>
 
-    <!-- ================= أصوات الإشعارات ================= -->
     <audio id="newOrderSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
     <audio id="readyOrderSound" src="https://www.soundjay.com/misc/sounds/ding-2.mp3" preload="auto"></audio>
 
-    <!-- ================= شاشة تسجيل الدخول (Hardcoded) ================= -->
+    <!-- شاشة تسجيل الدخول -->
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-50" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
         <div class="login-container w-full max-w-md p-8 rounded-3xl shadow-2xl">
             <div class="text-center mb-8">
                 <div class="gold-gradient p-4 rounded-2xl inline-block mb-4">
-                    <i class="fas fa-crown text-4xl text-gray-900"></i>
+                    <i class="fas fa-rabbit text-4xl text-gray-900"></i>
                 </div>
-                <h1 class="text-3xl font-black gold-text">ماكولات الارنب الصاحك</h1>
-                <p class="text-gray-400 text-sm mt-1">نظام إدارة المقهى الذهبي</p>
-            </div>
-            
-            <!-- قائمة منسدلة للمستخدمين -->
-            <div class="mb-4">
-                <label class="block text-gray-300 mb-2 text-sm"><i class="fas fa-users ml-2"></i> اختر نوع المستخدم</label>
-                <select id="userTypeSelect" class="w-full bg-white/10 border border-gray-600 rounded-xl p-3 text-white">
-                    <option value="admin">👑 مدير</option>
-                    <option value="cashier">💰 كاشير</option>
-                    <option value="kitchen">🍳 طباخ</option>
-                </select>
+                <h1 class="text-3xl font-black gold-text">مأكولات الأرنب الضاحك</h1>
+                <p class="text-gray-400 text-sm mt-1">نظام إدارة المقهى الذهبي 🐰</p>
             </div>
             
             <div class="space-y-4">
@@ -129,28 +104,26 @@
             </div>
             
             <div class="mt-6 text-center text-gray-400 text-xs">
-                <p>بيانات الدخول التجريبية:</p>
-                <p>مدير: admin / 123456</p>
-                <p>كاشير: cashier / 123456</p>
-                <p>طباخ: kitchen / 123456</p>
+                <p>مدير: admin / 123456 | كاشير: cashier / 123456 | طباخ: kitchen / 123456</p>
             </div>
         </div>
     </div>
 
-    <!-- ================= التطبيق الرئيسي ================= -->
+    <!-- التطبيق الرئيسي -->
     <div id="mainApp" class="hidden h-full flex flex-col">
         
         <header class="glass-card rounded-3xl p-3 mb-3 flex justify-between items-center text-white shadow-2xl">
             <div class="flex items-center gap-2">
-                <div class="gold-gradient p-2 rounded-2xl"><i class="fas fa-crown text-2xl text-gray-900"></i></div>
+                <div class="gold-gradient p-2 rounded-2xl"><i class="fas fa-rabbit text-2xl text-gray-900"></i></div>
                 <div>
-                    <h1 class="text-2xl font-black gold-text">ماكولات الارنب الصاحك</h1>
-                    <p class="text-xs text-gray-300" id="userRoleDisplay">نكهة سومرية</p>
+                    <h1 class="text-2xl font-black gold-text">مأكولات الأرنب الضاحك</h1>
+                    <p class="text-xs text-gray-300" id="userRoleDisplay">نكهة بغداد 🐰</p>
                 </div>
             </div>
             <div class="flex gap-2">
                 <button onclick="showCashier()" id="btnCashier" class="px-4 py-2 rounded-xl font-bold tab-active"><i class="fas fa-cash-register ml-1"></i> البيع</button>
                 <button onclick="showOrders()" id="btnOrders" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-clipboard-list ml-1"></i> الطلبات</button>
+                <button onclick="showKitchenScreen()" id="btnKitchen" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-utensils ml-1"></i> شاشة المطبخ</button>
                 <button onclick="showReports()" id="btnReports" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white admin-only"><i class="fas fa-chart-bar ml-1"></i> التقارير</button>
                 <button onclick="showAdmin()" id="btnAdmin" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white admin-only"><i class="fas fa-cog ml-1"></i> الإدارة</button>
                 <button onclick="logout()" class="px-4 py-2 rounded-xl font-bold bg-red-600/50 hover:bg-red-700 text-white"><i class="fas fa-sign-out-alt"></i></button>
@@ -160,19 +133,34 @@
         <!-- واجهة الكاشير -->
         <main id="cashierView" class="flex-1 flex flex-col md:flex-row gap-3 overflow-hidden">
             <div class="flex-[3] flex flex-col gap-3 overflow-hidden">
+                <!-- الوجبات المجمعة ونسخ آخر طلب -->
                 <div class="glass-card-light rounded-3xl p-4">
-                    <div class="relative mb-3">
+                    <div class="flex gap-2 mb-3">
+                        <button onclick="repeatLastOrder()" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1">
+                            <i class="fas fa-copy"></i> نسخ آخر طلب
+                        </button>
+                        <button onclick="showCombos()" class="gold-gradient text-gray-900 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-1">
+                            <i class="fas fa-gift"></i> الوجبات المجمعة
+                        </button>
+                    </div>
+                    
+                    <!-- قائمة الوجبات المجمعة (مخفية افتراضياً) -->
+                    <div id="combosPanel" class="hidden grid grid-cols-2 md:grid-cols-3 gap-2 mb-3"></div>
+                    
+                    <div class="relative">
                         <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                         <input type="text" id="searchInput" onkeyup="searchProducts()" placeholder="شنو تريد تدور؟" class="w-full bg-white/80 rounded-2xl py-3 pr-12 pl-4 shadow-inner">
                     </div>
-                    <h3 class="font-bold text-gray-700 mb-2"><i class="fas fa-layer-group ml-2 text-yellow-600"></i> الأصناف</h3>
+                    <h3 class="font-bold text-gray-700 mt-3 mb-2"><i class="fas fa-layer-group ml-2 text-yellow-600"></i> الأصناف</h3>
                     <div id="categoryGrid" class="grid grid-cols-3 md:grid-cols-5 gap-2"></div>
                 </div>
+                
                 <div class="glass-card-light rounded-3xl p-4 flex-1 overflow-hidden flex flex-col">
-                    <h3 class="font-bold text-gray-700 mb-2"><i class="fas fa-mug-saucer ml-2 text-yellow-600"></i> قائمة المأكولات</h3>
+                    <h3 class="font-bold text-gray-700 mb-2"><i class="fas fa-utensils ml-2 text-yellow-600"></i> قائمة المأكولات</h3>
                     <div id="productsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto pr-1 pb-2"></div>
                 </div>
             </div>
+            
             <div class="flex-1 glass-card rounded-3xl p-4 text-white flex flex-col shadow-2xl border-2 border-yellow-600/30">
                 <div class="flex justify-between items-center border-b border-white/20 pb-3">
                     <h2 class="text-xl font-black"><i class="fas fa-shopping-basket ml-2 text-yellow-400"></i> سلة الزبون</h2>
@@ -202,13 +190,26 @@
                 </div>
                 
                 <div class="glass-card-light rounded-3xl p-5">
-                    <h3 class="text-xl font-black mb-4 flex items-center"><i class="fas fa-clock ml-2 text-yellow-600"></i> الطلبات المعلقة</h3>
+                    <h3 class="text-xl font-black mb-4"><i class="fas fa-clock ml-2 text-yellow-600"></i> الطلبات المعلقة</h3>
                     <div id="activeOrdersList" class="space-y-3 max-h-96 overflow-y-auto"></div>
                 </div>
                 
                 <div class="glass-card-light rounded-3xl p-5">
-                    <h3 class="text-xl font-black mb-4 flex items-center"><i class="fas fa-check-circle ml-2 text-green-600"></i> آخر الطلبات المنجزة</h3>
+                    <h3 class="text-xl font-black mb-4"><i class="fas fa-check-circle ml-2 text-green-600"></i> آخر الطلبات المنجزة</h3>
                     <div id="completedOrdersList" class="space-y-2"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- شاشة المطبخ المبسطة (جديدة) -->
+        <main id="kitchenView" class="flex-1 overflow-y-auto hidden">
+            <div class="kitchen-screen rounded-3xl p-6">
+                <h2 class="text-3xl font-black gold-text mb-6 text-center">👨‍🍳 شاشة المطبخ - الطلبات الجديدة</h2>
+                <div id="kitchenOrdersList" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <p class="text-gray-400 text-center col-span-full py-10">جاري تحميل الطلبات...</p>
+                </div>
+                <div class="text-center mt-6 text-gray-400 text-sm">
+                    <i class="fas fa-sync-alt fa-spin ml-1"></i> تحديث تلقائي كل 10 ثواني
                 </div>
             </div>
         </main>
@@ -244,12 +245,23 @@
         <!-- لوحة الإدارة -->
         <main id="adminView" class="flex-1 overflow-y-auto hidden">
             <div class="max-w-7xl mx-auto space-y-4">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div class="glass-card-light rounded-3xl p-5">
-                        <h3 class="text-xl font-black mb-4"><i class="fas fa-folder-plus ml-2 text-yellow-600"></i> إضافة صنف</h3>
-                        <div class="flex gap-2"><input type="text" id="newCatName" placeholder="اسم الصنف" class="flex-1 bg-white/70 rounded-xl p-3"><button onclick="addCategory()" class="gold-gradient px-6 rounded-xl font-bold"><i class="fas fa-plus"></i></button></div>
-                        <ul id="adminCatList" class="mt-4 space-y-2 max-h-60 overflow-y-auto"></ul>
+                <!-- الوجبات المجمعة (إدارة) -->
+                <div class="glass-card-light rounded-3xl p-5">
+                    <h3 class="text-xl font-black mb-4"><i class="fas fa-gift ml-2 text-purple-600"></i> إدارة الوجبات المجمعة</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="text" id="comboName" placeholder="اسم الوجبة" class="bg-white/70 rounded-xl p-3">
+                        <input type="number" id="comboPrice" placeholder="السعر الكلي" class="bg-white/70 rounded-xl p-3">
+                        <select id="comboProducts" multiple class="bg-white/70 rounded-xl p-3" size="3"></select>
+                        <button onclick="saveCombo()" class="bg-purple-600 text-white py-3 rounded-xl font-black">حفظ الوجبة</button>
                     </div>
+                    <p class="text-xs text-gray-500 mt-2">* اضغط Ctrl للاختيار المتعدد</p>
+                    <div id="combosList" class="mt-4 space-y-2"></div>
+                </div>
+                
+                <div class="glass-card-light rounded-3xl p-5">
+                    <h3 class="text-xl font-black mb-4"><i class="fas fa-folder-plus ml-2 text-yellow-600"></i> إضافة صنف</h3>
+                    <div class="flex gap-2"><input type="text" id="newCatName" placeholder="اسم الصنف" class="flex-1 bg-white/70 rounded-xl p-3"><button onclick="addCategory()" class="gold-gradient px-6 rounded-xl font-bold"><i class="fas fa-plus"></i></button></div>
+                    <ul id="adminCatList" class="mt-4 space-y-2 max-h-60 overflow-y-auto"></ul>
                 </div>
                 
                 <div class="glass-card-light rounded-3xl p-5">
@@ -272,18 +284,23 @@
     </div>
 
     <script>
-        // ================= متغيرات عامة =================
         let currentCart = [], allProducts = [], allCategories = [], allOrders = [], selectedCat = 'الكل';
         let userRole = 'admin';
         let topProductsChartInstance = null, weeklySalesChartInstance = null;
+        let lastOrder = null;
+        let combos = [];
+        let kitchenInterval = null;
         
-        // ================= نظام تسجيل الدخول (Hardcoded) =================
+        // ================= تسجيل الدخول =================
         window.hardcodedLogin = () => {
-            const username = document.getElementById('loginUsername').value.toLowerCase();
-            const password = document.getElementById('loginPassword').value;
-            const userType = document.getElementById('userTypeSelect').value;
+            const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+            const password = document.getElementById('loginPassword').value.trim();
             
-            // قائمة المستخدمين الثابتة
+            if (!username || !password) {
+                alert('❌ الرجاء إدخال اسم المستخدم وكلمة المرور!');
+                return;
+            }
+            
             const validUsers = {
                 'admin': { password: '123456', role: 'admin' },
                 'cashier': { password: '123456', role: 'cashier' },
@@ -292,44 +309,183 @@
             
             if (validUsers[username] && validUsers[username].password === password) {
                 userRole = validUsers[username].role;
-            } else if (username === '' || password === '') {
-                // إذا دخل بدون كتابة شيء، نستخدم نوع المستخدم المختار
-                userRole = userType;
             } else {
-                alert('❌ اسم المستخدم أو كلمة المرور غير صحيحة!\n\nجرب:\nمدير: admin / 123456\nكاشير: cashier / 123456\nطباخ: kitchen / 123456');
+                alert('❌ اسم المستخدم أو كلمة المرور غير صحيحة!');
                 return;
             }
             
-            // فتح التطبيق
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
             
-            // عرض الصلاحية
             const roleNames = { 'admin': 'مدير', 'cashier': 'كاشير', 'kitchen': 'طباخ' };
-            document.getElementById('userRoleDisplay').innerText = `${roleNames[userRole]} - ماكولا سويعه`;
+            document.getElementById('userRoleDisplay').innerText = `${roleNames[userRole]} - مأكولات الأرنب الضاحك 🐰`;
             
-            // إخفاء أزرار المدير لغير المدير
             if (userRole !== 'admin') {
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
             }
             
             loadAllData();
+            loadCombos();
             
-            // توجيه الطباخ مباشرة لشاشة الطلبات
             if (userRole === 'kitchen') {
-                showOrders();
+                showKitchenScreen();
             }
         };
         
-        window.logout = () => {
-            location.reload();
+        window.logout = () => location.reload();
+
+        // ================= الوجبات المجمعة =================
+        async function loadCombos() {
+            const snap = await getDocs(collection(db, "combos"));
+            combos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderCombosPanel();
+            renderCombosList();
+        }
+        
+        function renderCombosPanel() {
+            const panel = document.getElementById('combosPanel');
+            if (combos.length === 0) {
+                panel.innerHTML = '<p class="text-gray-400 text-center col-span-full py-2">ماكو وجبات مجمعة. أضف من لوحة الإدارة.</p>';
+                return;
+            }
+            panel.innerHTML = combos.map(c => `
+                <div onclick="addComboToCart('${c.id}')" class="combo-card bg-gradient-to-br from-purple-100 to-pink-100 p-3 rounded-2xl text-center font-black cursor-pointer shadow">
+                    <i class="fas fa-gift text-purple-600 text-xl"></i>
+                    <h4 class="text-gray-800">${c.name}</h4>
+                    <p class="text-xs text-gray-600">${c.products.map(p => `${p.quantity}x ${p.name}`).join(' + ')}</p>
+                    <p class="text-lg font-black text-purple-700">${c.price} د.ع</p>
+                </div>
+            `).join('');
+        }
+        
+        window.showCombos = () => {
+            const panel = document.getElementById('combosPanel');
+            panel.classList.toggle('hidden');
+        };
+        
+        window.addComboToCart = (comboId) => {
+            const combo = combos.find(c => c.id === comboId);
+            if (!combo) return;
+            
+            combo.products.forEach(p => {
+                const existing = currentCart.find(i => i.id === p.id);
+                if (existing) {
+                    existing.quantity += p.quantity;
+                } else {
+                    currentCart.push({
+                        id: p.id,
+                        name: p.name,
+                        price: p.price,
+                        quantity: p.quantity
+                    });
+                }
+            });
+            
+            renderCart();
+            document.getElementById('combosPanel').classList.add('hidden');
+        };
+        
+        window.saveCombo = async () => {
+            const name = document.getElementById('comboName').value;
+            const price = parseFloat(document.getElementById('comboPrice').value);
+            const select = document.getElementById('comboProducts');
+            const selected = Array.from(select.selectedOptions).map(opt => {
+                const prod = allProducts.find(p => p.id === opt.value);
+                return { id: prod.id, name: prod.name, price: prod.price, quantity: 1 };
+            });
+            
+            if (!name || !price || selected.length === 0) return alert('الرجاء تعبئة جميع الحقول');
+            
+            await addDoc(collection(db, "combos"), { name, price, products: selected });
+            document.getElementById('comboName').value = '';
+            document.getElementById('comboPrice').value = '';
+            loadCombos();
+        };
+        
+        function renderCombosList() {
+            const list = document.getElementById('combosList');
+            if (combos.length === 0) {
+                list.innerHTML = '<p class="text-gray-400">ماكو وجبات</p>';
+                return;
+            }
+            list.innerHTML = combos.map(c => `
+                <div class="flex justify-between items-center bg-white/50 p-2 rounded-xl">
+                    <div>
+                        <span class="font-black">${c.name}</span>
+                        <span class="text-sm text-gray-600 mr-3">${c.price} د.ع</span>
+                    </div>
+                    <button onclick="deleteCombo('${c.id}')" class="text-red-500">🗑️</button>
+                </div>
+            `).join('');
+        }
+        
+        window.deleteCombo = async (id) => {
+            await deleteDoc(doc(db, "combos", id));
+            loadCombos();
+        };
+
+        // ================= نسخ آخر طلب =================
+        window.repeatLastOrder = () => {
+            if (!lastOrder) {
+                alert('ماكو طلبات سابقة!');
+                return;
+            }
+            
+            if (currentCart.length > 0) {
+                if (!confirm('هل تريد استبدال السلة الحالية بآخر طلب؟')) return;
+                currentCart = [];
+            }
+            
+            lastOrder.items.forEach(item => {
+                currentCart.push({ ...item });
+            });
+            
+            renderCart();
+            alert('✅ تم نسخ آخر طلب إلى السلة!');
+        };
+
+        // ================= شاشة المطبخ =================
+        function renderKitchenScreen() {
+            const newOrders = allOrders.filter(o => o.status === 'جديد');
+            const container = document.getElementById('kitchenOrdersList');
+            
+            if (newOrders.length === 0) {
+                container.innerHTML = '<p class="text-green-400 text-center col-span-full py-10 text-xl">✅ ماكو طلبات جديدة - كلشي جاهز!</p>';
+                return;
+            }
+            
+            container.innerHTML = newOrders.map(o => `
+                <div class="kitchen-order-card rounded-2xl p-5 text-white shadow-xl">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-3xl font-black gold-text">#${o.orderNumber || o.id.slice(-3)}</span>
+                        <span class="bg-yellow-500/30 px-3 py-1 rounded-full text-sm">${new Date(o.createdAt.toDate()).toLocaleTimeString('ar-IQ')}</span>
+                    </div>
+                    <div class="space-y-2 text-lg">
+                        ${o.items.map(i => `<div class="flex justify-between"><span>${i.quantity}x ${i.name}</span></div>`).join('')}
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button onclick="updateOrderStatus('${o.id}', 'جاهز'); renderKitchenScreen();" class="gold-gradient text-gray-900 px-6 py-2 rounded-xl font-black">
+                            ✅ جاهز للتسليم
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        window.showKitchenScreen = () => {
+            hideAll();
+            document.getElementById('kitchenView').classList.remove('hidden');
+            setActiveTab('btnKitchen');
+            renderKitchenScreen();
+            
+            // تحديث تلقائي كل 10 ثواني
+            if (kitchenInterval) clearInterval(kitchenInterval);
+            kitchenInterval = setInterval(() => {
+                loadAllData().then(() => renderKitchenScreen());
+            }, 10000);
         };
 
         // ================= تحميل البيانات =================
-        window.addEventListener('firebaseReady', () => {
-            // ما يحتاج ننتظر تسجيل دخول لأن النظام يشتغل مباشرة بعد الدخول
-        });
-
         async function loadAllData() {
             try {
                 const catSnap = await getDocs(collection(db, "categories"));
@@ -339,18 +495,23 @@
                 const orderSnap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
                 allOrders = orderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 
+                if (allOrders.length > 0) lastOrder = allOrders[0];
+                
                 if (!document.getElementById('cashierView').classList.contains('hidden')) {
                     renderCategoryGrid(); 
                     renderProductsGrid('الكل'); 
                     renderCart();
                 }
                 if (!document.getElementById('ordersView').classList.contains('hidden')) renderOrdersView();
+                if (!document.getElementById('kitchenView').classList.contains('hidden')) renderKitchenScreen();
                 if (!document.getElementById('reportsView').classList.contains('hidden')) renderReportsView();
-                if (!document.getElementById('adminView').classList.contains('hidden')) loadAdminData();
+                if (!document.getElementById('adminView').classList.contains('hidden')) {
+                    loadAdminData();
+                    document.getElementById('comboProducts').innerHTML = allProducts.map(p => `<option value="${p.id}">${p.name} (${p.price} د.ع)</option>`).join('');
+                }
             } catch (e) { console.error(e); }
         }
 
-        // ========== واجهة الكاشير ==========
         function renderCategoryGrid() {
             const grid = document.getElementById('categoryGrid');
             let html = `<div onclick="filterProducts('الكل')" class="cat-card bg-gradient-to-br from-yellow-400 to-amber-600 p-2 rounded-2xl text-center font-black cursor-pointer ${selectedCat==='الكل'?'ring-4 ring-yellow-200':''}"><i class="fas fa-star"></i> الكل</div>`;
@@ -368,7 +529,7 @@
             const grid = document.getElementById('productsGrid');
             const filtered = list || (catId === 'الكل' ? allProducts : allProducts.filter(p => p.category_id == catId));
             if (filtered.length === 0) { grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400"><p>ماكو مواد</p></div>'; return; }
-            grid.innerHTML = filtered.map(prod => `<div onclick="addToCart('${prod.id}')" class="product-card bg-white/90 p-3 rounded-2xl shadow-lg cursor-pointer"><div class="flex justify-between"><h4 class="font-black">${prod.name}</h4><span class="gold-gradient px-2 py-0.5 rounded-xl text-sm font-black">${prod.price} د.ع</span></div></div>`).join('');
+            grid.innerHTML = filtered.map(prod => `<div onclick="addToCart('${prod.id}')" class="product-card bg-white/90 p-3 rounded-2xl shadow-lg"><div class="flex justify-between"><h4 class="font-black">${prod.name}</h4><span class="gold-gradient px-2 py-0.5 rounded-xl text-sm font-black">${prod.price} د.ع</span></div></div>`).join('');
         }
 
         window.addToCart = (id) => { let p = allProducts.find(x=>x.id===id); let e = currentCart.find(i=>i.id===id); e ? e.quantity++ : currentCart.push({id:p.id, name:p.name, price:p.price, quantity:1}); renderCart(); };
@@ -403,7 +564,6 @@
             } catch (e) { alert('❌ فشل الاتصال.'); }
         };
 
-        // ========== شاشة الطلبات ==========
         function renderOrdersView() {
             const today = new Date().toDateString();
             const todayOrders = allOrders.filter(o => o.createdAt && new Date(o.createdAt.toDate()).toDateString() === today);
@@ -460,17 +620,15 @@
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <html dir="rtl"><head><title>فاتورة #${order.orderNumber}</title>
-                <style>body{font-family:'Cairo',sans-serif;text-align:center;padding:20px}.header{border-bottom:2px dashed #d97706;padding-bottom:10px;margin-bottom:20px}.item{display:flex;justify-content:space-between;margin:10px 0}.total{border-top:2px dashed #d97706;margin-top:20px;padding-top:20px;font-size:1.5em;font-weight:bold}.footer{margin-top:30px;color:#666;font-size:.8em}</style>
-                </head><body><div class="header"><h1>🧉 ماكولات الارنب الضاحك</h1><p>نكهة سومرية • جودة الملوك</p><p>فاتورة رقم #${order.orderNumber}</p><p>${new Date(order.createdAt.toDate()).toLocaleString('ar-IQ')}</p></div>
+                <style>body{font-family:'Cairo',sans-serif;text-align:center;padding:20px}.header{border-bottom:2px dashed #d97706;padding-bottom:10px;margin-bottom:20px}.item{display:flex;justify-content:space-between;margin:10px 0}.total{border-top:2px dashed #d97706;margin-top:20px;padding-top:20px;font-size:1.5em;font-weight:bold}</style>
+                </head><body><div class="header"><h1>🐰 مأكولات الأرنب الضاحك</h1><p>فاتورة رقم #${order.orderNumber}</p><p>${new Date(order.createdAt.toDate()).toLocaleString('ar-IQ')}</p></div>
                 <div>${order.items.map(i => `<div class="item"><span>${i.quantity}x ${i.name}</span><span>${(i.price * i.quantity).toFixed(2)} د.ع</span></div>`).join('')}</div>
-                <div class="total"><div class="item"><span>الإجمالي</span><span>${order.total.toFixed(2)} د.ع</span></div></div>
-                <div class="footer"><p>شكراً لزيارتكم • نتمنى لكم يوماً سعيداً</p><p>📞 0770 000 0000</p></div></body></html>
+                <div class="total"><div class="item"><span>الإجمالي</span><span>${order.total.toFixed(2)} د.ع</span></div></div></body></html>
             `);
             printWindow.document.close();
             printWindow.print();
         };
 
-        // ========== شاشة التقارير ==========
         function renderReportsView() {
             const totalSales = allOrders.reduce((s, o) => s + o.total, 0);
             document.getElementById('totalSalesAll').innerText = totalSales.toFixed(2);
@@ -503,7 +661,7 @@
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "الطلبات");
-            XLSX.writeFile(wb, `تقرير_ماكولات_الارنب الضاحك_${new Date().toISOString().split('T')[0]}.xlsx`);
+            XLSX.writeFile(wb, `تقرير_الارنب_الضاحك_${new Date().toISOString().split('T')[0]}.xlsx`);
         };
 
         window.exportToPDF = async () => {
@@ -512,10 +670,9 @@
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jspdf.jsPDF({ orientation: 'landscape' });
             pdf.addImage(imgData, 'PNG', 10, 10, 280, 150);
-            pdf.save(`تقرير_ماكولات_الارنب الضاحك_${new Date().toISOString().split('T')[0]}.pdf`);
+            pdf.save(`تقرير_الارنب_الضاحك_${new Date().toISOString().split('T')[0]}.pdf`);
         };
 
-        // ========== لوحة الإدارة ==========
         async function loadAdminData() {
             document.getElementById('newProdCat').innerHTML = allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             document.getElementById('adminCatList').innerHTML = allCategories.map(c => `<li class="flex justify-between bg-white/50 p-2 rounded-xl"><span>📁 ${c.name}</span><button onclick="deleteCategory('${c.id}')" class="text-red-500">🗑️</button></li>`).join('');
@@ -531,15 +688,18 @@
         };
         window.deleteProduct = async (id) => { await deleteDoc(doc(db, "products", id)); loadAllData(); };
 
-        // ========== التنقل ==========
         window.showCashier = () => { hideAll(); document.getElementById('cashierView').classList.remove('hidden'); setActiveTab('btnCashier'); loadAllData(); };
         window.showOrders = () => { hideAll(); document.getElementById('ordersView').classList.remove('hidden'); setActiveTab('btnOrders'); loadAllData(); };
         window.showReports = () => { hideAll(); document.getElementById('reportsView').classList.remove('hidden'); setActiveTab('btnReports'); loadAllData(); };
         window.showAdmin = () => { hideAll(); document.getElementById('adminView').classList.remove('hidden'); setActiveTab('btnAdmin'); loadAllData(); };
         
-        function hideAll() { ['cashierView', 'ordersView', 'reportsView', 'adminView'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+        function hideAll() { 
+            ['cashierView', 'ordersView', 'kitchenView', 'reportsView', 'adminView'].forEach(id => document.getElementById(id).classList.add('hidden')); 
+            if (kitchenInterval) { clearInterval(kitchenInterval); kitchenInterval = null; }
+        }
+        
         function setActiveTab(activeId) {
-            ['btnCashier', 'btnOrders', 'btnReports', 'btnAdmin'].forEach(id => {
+            ['btnCashier', 'btnOrders', 'btnKitchen', 'btnReports', 'btnAdmin'].forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) { btn.classList.remove('tab-active', 'gold-gradient'); btn.classList.add('bg-gray-700', 'text-white'); }
             });
