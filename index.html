@@ -71,7 +71,7 @@
         window.orderBy = orderBy;
         window.where = where;
         
-        console.log("🐰 مأكولات الأرنب الضاحك - جاهز");
+        console.log("🐰 مأكولات الأرنب الضاحك - الإصدار النهائي");
         window.dispatchEvent(new Event('firebaseReady'));
     </script>
 
@@ -86,7 +86,7 @@
                     <i class="fas fa-rabbit text-4xl text-gray-900"></i>
                 </div>
                 <h1 class="text-3xl font-black gold-text">مأكولات الأرنب الضاحك</h1>
-                <p class="text-gray-400 text-sm mt-1">نظام إدارة المقهى الذهبي 🐰</p>
+                <p class="text-gray-400 text-sm mt-1">النظام الذهبي المتكامل 🐰</p>
             </div>
             
             <div class="space-y-4">
@@ -104,7 +104,9 @@
             </div>
             
             <div class="mt-6 text-center text-gray-400 text-xs">
-                <p>مدير: admin / 123456 | كاشير: cashier / 123456 | طباخ: kitchen / 123456</p>
+                <p>👑 مدير: admin / 123456</p>
+                <p>💰 كاشير: cashier / 123456</p>
+                <p>🍳 طباخ: kitchen / 123456</p>
             </div>
         </div>
     </div>
@@ -120,7 +122,7 @@
                     <p class="text-xs text-gray-300" id="userRoleDisplay">نكهة بغداد 🐰</p>
                 </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap justify-end">
                 <button onclick="showCashier()" id="btnCashier" class="px-4 py-2 rounded-xl font-bold tab-active"><i class="fas fa-cash-register ml-1"></i> البيع</button>
                 <button onclick="showOrders()" id="btnOrders" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-clipboard-list ml-1"></i> الطلبات</button>
                 <button onclick="showKitchenScreen()" id="btnKitchen" class="px-4 py-2 rounded-xl font-bold bg-gray-700 text-white"><i class="fas fa-utensils ml-1"></i> المطبخ</button>
@@ -152,8 +154,8 @@
                         </div>
                     </div>
                     
-                    <!-- قائمة الكوبونات -->
-                    <div id="couponPanel" class="hidden mb-3">
+                    <!-- قائمة الكوبونات (ظاهرة دائماً) -->
+                    <div id="couponPanel" class="mb-3">
                         <div class="flex gap-2">
                             <input type="text" id="couponCode" placeholder="كود الخصم" class="flex-1 bg-white rounded-lg p-2 text-sm">
                             <button onclick="applyCoupon()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm">تطبيق</button>
@@ -184,7 +186,6 @@
                 </div>
                 <div id="cartItems" class="flex-1 overflow-y-auto my-3 space-y-2"></div>
                 
-                <!-- ملخص الخصم والتوصيل -->
                 <div id="cartSummary" class="text-sm space-y-1 border-t border-white/20 pt-2 mb-2 hidden">
                     <div class="flex justify-between"><span>المجموع الفرعي:</span><span id="subtotalAmount">0</span> د.ع</div>
                     <div class="flex justify-between text-green-400"><span>الخصم:</span><span id="discountAmount">0</span> د.ع</div>
@@ -348,22 +349,19 @@
         let currentDiscount = { type: null, value: 0, code: null };
         let backupInterval = null;
         
-        // ================= نسخ احتياطي تلقائي =================
+        // ================= نسخ احتياطي =================
         function scheduleAutoBackup() {
-            // حساب الوقت المتبقي للساعة 12 منتصف الليل
             const now = new Date();
             const night = new Date(now);
             night.setHours(24, 0, 0, 0);
             const msUntilMidnight = night - now;
             
-            // أول نسخة بعد منتصف الليل
             setTimeout(() => {
                 performBackup();
-                // ثم كل 24 ساعة
                 backupInterval = setInterval(performBackup, 24 * 60 * 60 * 1000);
             }, msUntilMidnight);
             
-            console.log(`🕐 تم جدولة النسخ الاحتياطي اليومي الساعة 12 منتصف الليل`);
+            console.log(`🕐 النسخ الاحتياطي مجدول يومياً الساعة 12 منتصف الليل`);
         }
         
         async function performBackup() {
@@ -377,14 +375,11 @@
                     coupons: coupons
                 };
                 
-                // حفظ النسخة في localStorage
                 const backups = JSON.parse(localStorage.getItem('arnob_backups') || '[]');
                 backups.push(backup);
-                // الاحتفاظ بآخر 7 نسخ فقط
                 if (backups.length > 7) backups.shift();
                 localStorage.setItem('arnob_backups', JSON.stringify(backups));
                 
-                // أيضاً تحميل نسخة كملف JSON تلقائي
                 const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -393,7 +388,7 @@
                 a.click();
                 URL.revokeObjectURL(url);
                 
-                console.log('✅ تم النسخ الاحتياطي التلقائي بنجاح');
+                console.log('✅ نسخ احتياطي تلقائي تم بنجاح');
             } catch (e) {
                 console.error('❌ فشل النسخ الاحتياطي:', e);
             }
@@ -453,7 +448,7 @@
             location.reload();
         };
 
-        // ================= التوصيل =================
+        // ================= التوصيل (الكوبونات ظاهرة دائماً) =================
         window.toggleDelivery = () => {
             isDelivery = !isDelivery;
             const info = document.getElementById('deliveryInfo');
@@ -464,13 +459,11 @@
                 btn.classList.remove('bg-blue-600');
                 btn.classList.add('bg-green-600');
                 btn.innerHTML = '<i class="fas fa-check"></i> توصيل مفعل';
-                document.getElementById('couponPanel').classList.remove('hidden');
             } else {
                 info.classList.add('hidden');
                 btn.classList.remove('bg-green-600');
                 btn.classList.add('bg-blue-600');
                 btn.innerHTML = '<i class="fas fa-motorcycle"></i> توصيل';
-                document.getElementById('couponPanel').classList.add('hidden');
             }
             renderCart();
         };
@@ -818,17 +811,17 @@
             currentDiscount = { type: null, value: 0, code: null };
             isDelivery = false;
             document.getElementById('deliveryInfo').classList.add('hidden');
-            document.getElementById('couponPanel').classList.add('hidden');
             document.getElementById('deliveryToggleBtn').classList.remove('bg-green-600');
             document.getElementById('deliveryToggleBtn').classList.add('bg-blue-600');
             document.getElementById('deliveryToggleBtn').innerHTML = '<i class="fas fa-motorcycle"></i> توصيل';
+            document.getElementById('couponMessage').innerHTML = '';
             renderCart(); 
         };
 
         window.submitOrder = async function() {
             if(currentCart.length === 0) return alert('السلة فارغة!');
             
-            const { total, discount, deliveryFee } = calculateTotal();
+            const { subtotal, discount, deliveryFee, total } = calculateTotal();
             const orderNumber = Math.floor(100 + Math.random() * 900);
             
             const customerName = document.getElementById('customerName')?.value || '';
@@ -843,7 +836,7 @@
                 const orderData = {
                     orderNumber,
                     items: currentCart,
-                    subtotal: calculateTotal().subtotal,
+                    subtotal: subtotal,
                     discount: discount,
                     deliveryFee: deliveryFee,
                     total,
@@ -858,7 +851,6 @@
                 
                 const orderRef = await addDoc(collection(db, "orders"), orderData);
                 
-                // تحديث عدد استخدامات الكوبون
                 if (currentDiscount.id) {
                     const coupon = coupons.find(c => c.id === currentDiscount.id);
                     await updateDoc(doc(db, "coupons", currentDiscount.id), { 
@@ -976,7 +968,9 @@
             document.getElementById('totalProductsAll').innerText = allProducts.length;
             document.getElementById('totalCategoriesAll').innerText = allCategories.length;
             document.getElementById('totalDeliveryOrders').innerText = deliveryOrders.length;
-            document.getElementById('totalDiscounts').innerText = totalDiscounts.toFixed(2);
+            if (document.getElementById('totalDiscounts')) {
+                document.getElementById('totalDiscounts').innerText = totalDiscounts.toFixed(2);
+            }
             
             const productSales = {};
             allOrders.forEach(o => o.items.forEach(i => productSales[i.name] = (productSales[i.name] || 0) + i.quantity));
